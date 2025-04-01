@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "Frea Custom New Tab Page",
+  // Consider incrementing version if making functional changes
+  "version": "1.1",
+  "description": "A clean and customizable new tab page with quick links, bookmarks, search, and themes.", // Slightly enhanced description
+
+  // Icons: Provide distinct sizes, ensure files exist at these paths
+  "icons": {
+    "16": "icons/icon-64.png",  // Used for favicon, extension menus
+    "32": "icons/icon-64.png",  // Used often on Windows taskbar/menus
+    "48": "icons/icon-64.png",  // Used on chrome://extensions page
+    "128": "icons/icon-64.png" // Used by the Chrome Web Store & during installation
+  },
+
+  // Override the new tab page
+  "chrome_url_overrides": {
+    "newtab": "newtab.html" // Ensure this filename matches your HTML file
+  },
+
+  // Permissions needed by the extension
+  "permissions": [
+    "storage",   // Recommended for storing settings reliably (even if currently using localStorage)
+    "bookmarks"  // Required for accessing and modifying bookmarks
+    // "favicon" // Only needed if you plan to use the chrome.favicon API (requires MV3 service worker)
+  ],
+
+  // Optional: If fetching favicons or other resources via fetch() in JS,
+  // you might need host permissions here. Since you're likely using <img> tags,
+  // CSP's 'img-src' directive is usually sufficient.
+  // "host_permissions": [
+  //   "*://*.google.com/s2/favicons*",
+  //   "*://icons.duckduckgo.com/ip3/*"
+  // ],
+
+  // Content Security Policy: Defines allowed resources to enhance security
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' data: https://www.google.com/s2/favicons https://icons.duckduckgo.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com;"
+    // Explanation:
+    // script-src 'self': Allow scripts ONLY from the extension's own files (SAFER than allowing external script CDNs).
+    // object-src 'self': Disallow plugins like Flash.
+    // img-src 'self' data: ...: Allow images from the extension, data URIs (for placeholders), and the specific favicon services used.
+    // style-src 'self' 'unsafe-inline' ...: Allow CSS from self, inline styles (check if necessary, avoid if possible!), and FontAwesome CDN.
+    // font-src 'self' ...: Allow fonts from self and FontAwesome CDN.
+    // ---
+    // NOTE 1: If you ARE NOT using the FontAwesome CDN (e.g., you bundle it or use SVGs), remove 'https://cdnjs.cloudflare.com' from 'style-src' and 'font-src'.
+    // NOTE 2: 'unsafe-inline' for styles is needed if you use style="..." attributes directly in HTML. It's better to use CSS classes if possible.
+  }
+
+  // Optional: Define a default language if supporting multiple languages
+  // "default_locale": "en",
+
+  // Optional: Specify minimum Chrome version if using newer APIs
+  // "minimum_chrome_version": "95"
+}

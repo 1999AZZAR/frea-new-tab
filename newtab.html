@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A clean and customizable new tab page with quick links, bookmarks, and search.">
+    <title>Frea New Tab</title>
+    <!-- Consider hosting Font Awesome locally or using SVGs -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="styles.css">
+    <!-- Favicon links -->
+    <link rel="icon" href="/icons/icon-64.png" sizes="any">
+    <link rel="icon" href="cons/icon-64.png" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.webmanifest">
+</head>
+<body>
+    <div class="container">
+
+        <!-- Page Header: Centered above Search -->
+        <header class="header">
+            <div class="time-date">
+                <div class="clock" id="clock" aria-live="polite" aria-atomic="true">--:-- --</div>
+                <div class="date" id="date">Loading date...</div>
+            </div>
+        </header>
+
+        <!-- Search Functionality -->
+        <div class="search-container">
+            <form id="search-form" action="https://www.google.com/search" method="get" class="google-search-form" role="search" aria-label="Google Search">
+                <div class="search-wrapper">
+                    <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                    <input type="search" id="google-search" name="q" placeholder="Search Google..." autocomplete="on" aria-label="Search Google">
+                </div>
+            </form>
+            <form id="bookmark-search-form" class="bookmark-search-form" role="search" aria-label="Bookmark Search">
+                <div class="search-wrapper">
+                    <i class="fas fa-bookmark search-icon" aria-hidden="true"></i>
+                    <input type="search" id="bookmark-search" placeholder="Search Bookmarks..." autocomplete="off" aria-label="Search your bookmarks">
+                </div>
+            </form>
+        </div>
+
+        <!-- Main Content Area -->
+        <main class="content">
+
+            <!-- Quick Links Section -->
+            <section class="quick-links-section" aria-labelledby="quick-links-title">
+                <h2 class="section-title" id="quick-links-title">
+                    <i class="fas fa-link" aria-hidden="true"></i> Quick Links
+                </h2>
+                <div class="quick-links" id="quick-links" role="list">
+                    <!-- "Add Link" Card -->
+                    <div class="link-card add-link-card" id="add-link-btn" role="button" tabindex="0" aria-label="Add new Quick Link">
+                        <div class="add-icon" aria-hidden="true">+</div>
+                        <p>Add Link</p>
+                    </div>
+                    <!-- JS will insert quick link cards here -->
+                    <!-- Example dynamically added card structure (JS would add title attr):
+                    <div class="link-card" role="listitem" data-index="0" data-url="..." data-title="..." draggable="true" tabindex="0" title="Example Site (https://example.com)">
+                        <div class="card-content">
+                            <img src="..." alt="" loading="lazy" width="40" height="40" class="favicon">
+                            <p class="link-name">Example Site</p>
+                        </div>
+                        <div class="card-controls"> ... buttons ... </div>
+                    </div>
+                     -->
+                </div>
+            </section>
+
+            <!-- Bookmarks Section -->
+            <section class="bookmarks-section hidden" id="bookmarks-section" aria-labelledby="bookmarks-title">
+                <h2 class="section-title" id="bookmarks-title">
+                    <i class="fas fa-bookmark" aria-hidden="true"></i> Bookmarks
+                </h2>
+                <div class="bookmarks-container" id="bookmarks-container" role="list">
+                    <!-- JS will insert "Add Bookmark" card and others here -->
+                </div>
+                 <div id="bookmarks-error" class="error-message" role="alert"></div>
+            </section>
+
+        </main> <!-- End of Main Content -->
+
+        <!-- Settings Toggle Button -->
+        <button id="settings-toggle" class="settings-toggle" type="button" aria-label="Open Settings" aria-controls="background-settings" aria-expanded="false">
+            <i class="fas fa-cog" aria-hidden="true"></i>
+        </button>
+
+        <!-- Settings Panel (Updated Structure) -->
+        <aside id="background-settings" class="settings-panel hidden" aria-labelledby="settings-panel-title" role="region"> <!-- Use aside -->
+            <header class="settings-header">
+                <h3 id="settings-panel-title"><i class="fas fa-cog" aria-hidden="true"></i> Settings</h3>
+                <button id="close-settings" class="btn-close" type="button" aria-label="Close settings">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </header>
+            <div class="settings-content">
+                <!-- Appearance Group -->
+                <div class="setting-group">
+                    <h4 class="setting-group-title">Appearance</h4>
+                    <div class="setting-item theme-toggle">
+                        <label for="theme-switch">Dark Mode</label>
+                        <input type="checkbox" id="theme-switch" role="switch" aria-checked="false">
+                    </div>
+                    <div class="setting-item background-control">
+                        <label for="background-input">Background Image URL</label>
+                        <div class="input-group">
+                             <input type="url" id="background-input" placeholder="Paste URL or leave blank" inputmode="url">
+                             <button id="background-apply" type="button" class="btn btn-secondary" aria-label="Apply background image">
+                                 <i class="fas fa-check" aria-hidden="true"></i>
+                             </button>
+                        </div>
+                    </div>
+                </div>
+
+                <hr> <!-- Divider -->
+
+                <!-- Data Management Group -->
+                <div class="setting-group">
+                     <h4 class="setting-group-title">Data Management</h4>
+                     <div class="setting-item import-export-controls" role="group" aria-labelledby="data-management-title">
+                        <!-- Visually hidden title moved to h4 above -->
+                        <button id="export-links-btn" type="button" class="btn btn-secondary">
+                            <i class="fas fa-file-export" aria-hidden="true"></i> Export Links
+                        </button>
+                        <button id="import-links-btn" type="button" class="btn btn-secondary">
+                            <i class="fas fa-file-import" aria-hidden="true"></i> Import Links
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </aside> <!-- End of Settings Panel -->
+
+        <!-- Link/Bookmark Add/Edit Modal -->
+        <div id="link-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="link-modal-title">
+            <div class="modal-content">
+                <header class="modal-header">
+                    <h2 id="link-modal-title">
+                        <i class="fas fa-link" aria-hidden="true"></i> <span>Add New Link</span> <!-- Span for easy text update -->
+                    </h2>
+                     <button type="button" class="btn-close modal-close-btn" aria-label="Close dialog"> <!-- Optional dedicated close button -->
+                         <i class="fas fa-times" aria-hidden="true"></i>
+                     </button>
+                </header>
+                <form id="link-form" novalidate>
+                    <div class="form-group">
+                        <label for="link-url">
+                            <i class="fas fa-globe" aria-hidden="true"></i> URL
+                        </label>
+                        <input type="url" id="link-url" name="url" placeholder="https://example.com" required inputmode="url">
+                    </div>
+                    <div class="form-group">
+                        <label for="link-name">
+                            <i class="fas fa-tag" aria-hidden="true"></i> Name
+                        </label>
+                        <input type="text" id="link-name" name="name" placeholder="e.g., My Favourite Site" required>
+                        <!-- JS could add an icon preview here -->
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="link-modal-cancel" class="btn btn-secondary" aria-label="Cancel editing link">
+                            <i class="fas fa-times" aria-hidden="true"></i> Cancel
+                        </button>
+                        <button type="submit" id="link-modal-submit" class="btn btn-primary" aria-label="Save link details">
+                            <i class="fas fa-save" aria-hidden="true"></i> Save
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div> <!-- End of Link Modal -->
+
+    </div> <!-- End of .container -->
+
+    <script src="newtab.js"></script>
+</body>
+</html>
