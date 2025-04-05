@@ -185,7 +185,7 @@ body.dark-theme::before { background-color: rgba(0, 0, 0, 0.25); }
 .search-wrapper { position: relative; display: flex; }
 .search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); opacity: 0.6; pointer-events: none; font-size: 1.1em; }
 
-#google-search, #bookmark-search {
+#google-search, #bookmark-search, #wiki-search {
     width: 100%;
     padding: 14px var(--large-padding) 14px 50px; /* Increased padding */
     font-size: 1rem;
@@ -198,9 +198,9 @@ body.dark-theme::before { background-color: rgba(0, 0, 0, 0.25); }
     transition: var(--transition-main);
     appearance: none; /* Remove default search input styling */
 }
-#google-search::placeholder, #bookmark-search::placeholder { color: var(--text-secondary); opacity: 0.8;}
+#google-search::placeholder, #bookmark-search::placeholder, #wiki-search::placeholder { color: var(--text-secondary); opacity: 0.8;}
 
-#google-search:focus, #bookmark-search:focus {
+#google-search:focus, #bookmark-search:focus, #wiki-search:focus {
     box-shadow: 0 0 0 3px rgba(var(--accent-current-rgb), 0.3), var(--shadow-medium); /* Glow effect + shadow */
     border-color: var(--accent-current);
 }
@@ -360,6 +360,37 @@ body.dark-theme::before { background-color: rgba(0, 0, 0, 0.25); }
 .setting-item input[type="text"], .setting-item input[type="url"] { flex-grow: 1; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: var(--border-radius-small); background-color: var(--bg-primary); color: var(--text-primary); font-size: 0.9rem; }
 .setting-item input:focus { outline: none; border-color: var(--accent-current); box-shadow: 0 0 0 2px rgba(var(--accent-current-rgb), 0.2); }
 .setting-item .btn { padding: 8px 12px; font-size: 0.9rem; flex-shrink: 0; /* Prevent button shrinking */ }
+
+.setting-item select.wallpaper-select { /* Style the new select */
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-small);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    appearance: none; /* Basic reset */
+    background-image: /* Add a dropdown arrow */
+        linear-gradient(45deg, transparent 50%, currentColor 50%),
+        linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position:
+        calc(100% - 20px) calc(1em + 2px),
+        calc(100% - 15px) calc(1em + 2px);
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 35px; /* Make space for arrow */
+}
+.setting-item select.wallpaper-select:focus {
+    outline: none;
+    border-color: var(--accent-current);
+    box-shadow: 0 0 0 2px rgba(var(--accent-current-rgb), 0.2);
+}
+
+/* Add some spacing between background control items if needed */
+.setting-item.background-control + .setting-item.background-control {
+    margin-top: var(--small-gap);
+}
 
 .theme-toggle { flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: var(--base-padding); }
 .theme-switch { cursor: pointer; /* Add styles for your specific switch component */ }

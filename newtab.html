@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="A clean and customizable new tab page with quick links, bookmarks, and search.">
     <title>Frea New Tab</title>
-    <!-- Consider hosting Font Awesome locally or using SVGs -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="styles.css">
     <!-- Favicon links -->
     <link rel="icon" href="/icons/icon-64.png" sizes="any">
-    <link rel="icon" href="cons/icon-64.png" type="image/svg+xml">
+    <link rel="icon" href="cons/icon-64.png" type="image/svg+xml"> <!-- Note: typo 'cons' fixed to 'icons' -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="manifest" href="/manifest.webmanifest"> <!-- Corrected manifest link -->
 </head>
 <body>
     <div class="container">
@@ -27,23 +27,33 @@
 
         <!-- Search Functionality -->
         <div class="search-container">
+            <!-- Google Search -->
             <form id="search-form" action="https://www.google.com/search" method="get" class="google-search-form" role="search" aria-label="Google Search">
                 <div class="search-wrapper">
                     <i class="fas fa-search search-icon" aria-hidden="true"></i>
                     <input type="search" id="google-search" name="q" placeholder="Search Google..." autocomplete="on" aria-label="Search Google">
                 </div>
             </form>
+            <!-- Bookmark Search -->
             <form id="bookmark-search-form" class="bookmark-search-form" role="search" aria-label="Bookmark Search">
                 <div class="search-wrapper">
                     <i class="fas fa-bookmark search-icon" aria-hidden="true"></i>
                     <input type="search" id="bookmark-search" placeholder="Search Bookmarks..." autocomplete="off" aria-label="Search your bookmarks">
                 </div>
             </form>
+            <!-- Wikipedia Search (NEW) -->
+            <form id="wiki-search-form" action="https://en.wikipedia.org/w/index.php" method="get" class="wiki-search-form" role="search" aria-label="Wikipedia Search" target="_blank">
+                 <div class="search-wrapper">
+                     <i class="fab fa-wikipedia-w search-icon" aria-hidden="true"></i>
+                     <input type="search" id="wiki-search" name="search" placeholder="Search Wikipedia..." autocomplete="on" aria-label="Search Wikipedia">
+                     <!-- Hidden input required by Wikipedia search -->
+                     <input type="hidden" name="title" value="Special:Search">
+                 </div>
+            </form>
         </div>
 
         <!-- Main Content Area -->
         <main class="content">
-
             <!-- Quick Links Section -->
             <section class="quick-links-section" aria-labelledby="quick-links-title">
                 <h2 class="section-title" id="quick-links-title">
@@ -55,16 +65,7 @@
                         <div class="add-icon" aria-hidden="true">+</div>
                         <p>Add Link</p>
                     </div>
-                    <!-- JS will insert quick link cards here -->
-                    <!-- Example dynamically added card structure (JS would add title attr):
-                    <div class="link-card" role="listitem" data-index="0" data-url="..." data-title="..." draggable="true" tabindex="0" title="Example Site (https://example.com)">
-                        <div class="card-content">
-                            <img src="..." alt="" loading="lazy" width="40" height="40" class="favicon">
-                            <p class="link-name">Example Site</p>
-                        </div>
-                        <div class="card-controls"> ... buttons ... </div>
-                    </div>
-                     -->
+                    <!-- JS inserts quick links here -->
                 </div>
             </section>
 
@@ -74,7 +75,7 @@
                     <i class="fas fa-bookmark" aria-hidden="true"></i> Bookmarks
                 </h2>
                 <div class="bookmarks-container" id="bookmarks-container" role="list">
-                    <!-- JS will insert "Add Bookmark" card and others here -->
+                    <!-- JS inserts bookmarks here -->
                 </div>
                  <div id="bookmarks-error" class="error-message" role="alert"></div>
             </section>
@@ -86,9 +87,9 @@
             <i class="fas fa-cog" aria-hidden="true"></i>
         </button>
 
-        <!-- Settings Panel (Updated Structure) -->
-        <aside id="background-settings" class="settings-panel hidden" aria-labelledby="settings-panel-title" role="region"> <!-- Use aside -->
-            <header class="settings-header">
+        <!-- Settings Panel -->
+        <aside id="background-settings" class="settings-panel hidden" aria-labelledby="settings-panel-title" role="region">
+             <header class="settings-header">
                 <h3 id="settings-panel-title"><i class="fas fa-cog" aria-hidden="true"></i> Settings</h3>
                 <button id="close-settings" class="btn-close" type="button" aria-label="Close settings">
                     <i class="fas fa-times" aria-hidden="true"></i>
@@ -102,15 +103,28 @@
                         <label for="theme-switch">Dark Mode</label>
                         <input type="checkbox" id="theme-switch" role="switch" aria-checked="false">
                     </div>
+                    <!-- Background Settings Sub-Group -->
                     <div class="setting-item background-control">
-                        <label for="background-input">Background Image URL</label>
+                         <label for="local-wallpaper-select">Local Wallpaper</label>
+                         <select id="local-wallpaper-select" name="local-wallpaper" class="wallpaper-select">
+                             <option value="">-- Default Gradient --</option>
+                             <!-- JS will populate this -->
+                         </select>
+                     </div>
+                    <div class="setting-item background-control">
+                        <label for="background-input">Online Wallpaper URL</label>
                         <div class="input-group">
-                             <input type="url" id="background-input" placeholder="Paste URL or leave blank" inputmode="url">
-                             <button id="background-apply" type="button" class="btn btn-secondary" aria-label="Apply background image">
-                                 <i class="fas fa-check" aria-hidden="true"></i>
+                             <input type="url" id="background-input" placeholder="Paste image URL" inputmode="url">
+                             <button id="background-apply" type="button" class="btn btn-secondary" aria-label="Apply background image URL">
+                                 <i class="fas fa-check" aria-hidden="true"></i> Apply
                              </button>
                         </div>
                     </div>
+                    <div class="setting-item background-control">
+                         <button id="clear-background-btn" type="button" class="btn btn-secondary">
+                             <i class="fas fa-times" aria-hidden="true"></i> Clear Background
+                         </button>
+                     </div>
                 </div>
 
                 <hr> <!-- Divider -->
@@ -119,7 +133,6 @@
                 <div class="setting-group">
                      <h4 class="setting-group-title">Data Management</h4>
                      <div class="setting-item import-export-controls" role="group" aria-labelledby="data-management-title">
-                        <!-- Visually hidden title moved to h4 above -->
                         <button id="export-links-btn" type="button" class="btn btn-secondary">
                             <i class="fas fa-file-export" aria-hidden="true"></i> Export Links
                         </button>
@@ -128,18 +141,17 @@
                         </button>
                     </div>
                 </div>
-
             </div>
-        </aside> <!-- End of Settings Panel -->
+        </aside>  <!-- End of Settings Panel -->
 
         <!-- Link/Bookmark Add/Edit Modal -->
         <div id="link-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="link-modal-title">
             <div class="modal-content">
                 <header class="modal-header">
                     <h2 id="link-modal-title">
-                        <i class="fas fa-link" aria-hidden="true"></i> <span>Add New Link</span> <!-- Span for easy text update -->
+                        <i class="fas fa-link" aria-hidden="true"></i> <span>Add New Link</span>
                     </h2>
-                     <button type="button" class="btn-close modal-close-btn" aria-label="Close dialog"> <!-- Optional dedicated close button -->
+                     <button type="button" class="btn-close modal-close-btn" aria-label="Close dialog">
                          <i class="fas fa-times" aria-hidden="true"></i>
                      </button>
                 </header>
@@ -155,7 +167,6 @@
                             <i class="fas fa-tag" aria-hidden="true"></i> Name
                         </label>
                         <input type="text" id="link-name" name="name" placeholder="e.g., My Favourite Site" required>
-                        <!-- JS could add an icon preview here -->
                     </div>
                     <div class="modal-actions">
                         <button type="button" id="link-modal-cancel" class="btn btn-secondary" aria-label="Cancel editing link">

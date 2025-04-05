@@ -17,14 +17,18 @@ const DOM_SELECTORS = {
     THEME_SWITCH: '#theme-switch',
     BACKGROUND_INPUT: '#background-input',
     BACKGROUND_APPLY_BTN: '#background-apply',
+    LOCAL_WALLPAPER_SELECT: '#local-wallpaper-select',
+    CLEAR_BACKGROUND_BTN: '#clear-background-btn',
     SEARCH_FORM: '#search-form',
     GOOGLE_SEARCH_INPUT: '#google-search',
     BOOKMARK_SEARCH_INPUT: '#bookmark-search',
+    WIKI_SEARCH_FORM: '#wiki-search-form',
+    WIKI_SEARCH_INPUT: '#wiki-search',
     CLOCK: '#clock',
     DATE: '#date',
     EXPORT_LINKS_BTN: '#export-links-btn',
     IMPORT_LINKS_BTN: '#import-links-btn',
-    IMPORT_EXPORT_CONTAINER_CLASS: '.import-export-controls', // For insertion point
+    IMPORT_EXPORT_CONTAINER_CLASS: '.import-export-controls',
 };
 
 const CSS_CLASSES = {
@@ -53,6 +57,15 @@ const ARIA_LABELS = {
     DELETE_BOOKMARK: 'Delete bookmark',
     EDIT_BOOKMARK: 'Edit bookmark',
 };
+
+// --- NEW: Local Wallpaper Config ---
+const WALLPAPERS_DIR = 'wallpapers';
+// ** IMPORTANT: List the filenames of the images you added to the wallpapers folder here **
+const KNOWN_WALLPAPERS = [
+    '01.jpg',
+    '02.jpg',
+    // Add more filenames as needed
+];
 
 // --- Utilities ---
 
@@ -631,7 +644,6 @@ class EntityManager {
 }
 
 class UIManager {
-    // Cache elements that are frequently accessed or configured
     static elements = {
         body: document.body,
         settingsToggle: null,
@@ -640,6 +652,8 @@ class UIManager {
         themeSwitch: null,
         backgroundInput: null,
         backgroundApplyBtn: null,
+        localWallpaperSelect: null,
+        clearBackgroundBtn: null,
         linkModal: null,
         linkModalTitle: null,
         linkForm: null,
@@ -651,13 +665,15 @@ class UIManager {
     };
 
     static init() {
-        // Cache elements on init
+        // Cache elements
         this.elements.settingsToggle = getElementByIdSafe(DOM_SELECTORS.SETTINGS_TOGGLE, 'UIManager init');
         this.elements.backgroundSettings = getElementByIdSafe(DOM_SELECTORS.BACKGROUND_SETTINGS, 'UIManager init');
         this.elements.closeSettingsBtn = getElementByIdSafe(DOM_SELECTORS.CLOSE_SETTINGS_BTN, 'UIManager init');
         this.elements.themeSwitch = getElementByIdSafe(DOM_SELECTORS.THEME_SWITCH, 'UIManager init');
         this.elements.backgroundInput = getElementByIdSafe(DOM_SELECTORS.BACKGROUND_INPUT, 'UIManager init');
         this.elements.backgroundApplyBtn = getElementByIdSafe(DOM_SELECTORS.BACKGROUND_APPLY_BTN, 'UIManager init');
+        this.elements.localWallpaperSelect = getElementByIdSafe(DOM_SELECTORS.LOCAL_WALLPAPER_SELECT, 'UIManager init');
+        this.elements.clearBackgroundBtn = getElementByIdSafe(DOM_SELECTORS.CLEAR_BACKGROUND_BTN, 'UIManager init');
         this.elements.linkModal = getElementByIdSafe(DOM_SELECTORS.LINK_MODAL, 'UIManager init');
         this.elements.linkModalTitle = getElementByIdSafe(DOM_SELECTORS.LINK_MODAL_TITLE, 'UIManager init');
         this.elements.linkForm = getElementByIdSafe(DOM_SELECTORS.LINK_FORM, 'UIManager init');
@@ -667,11 +683,11 @@ class UIManager {
         this.elements.clock = getElementByIdSafe(DOM_SELECTORS.CLOCK, 'UIManager init');
         this.elements.date = getElementByIdSafe(DOM_SELECTORS.DATE, 'UIManager init');
 
-        // Setup components that rely on these elements
+        // Setup components
         this.setupSearchForm(DOM_SELECTORS.SEARCH_FORM, DOM_SELECTORS.GOOGLE_SEARCH_INPUT);
         this.setupSearchFilter(DOM_SELECTORS.BOOKMARK_SEARCH_INPUT, DOM_SELECTORS.BOOKMARKS_CONTAINER);
         this.setupThemeToggle();
-        this.setupBackgroundImage();
+        this.setupBackgroundImageControls(); // Renamed setup function
         this.setupSettingsToggle();
         this.setupClockAndDate();
         this.setupModal();
@@ -794,48 +810,131 @@ class UIManager {
         });
     }
 
-    static setupBackgroundImage() {
-        const { backgroundInput, backgroundApplyBtn, body } = this.elements;
-         if (!backgroundInput || !backgroundApplyBtn || !body) {
-             console.error('Background elements or body not found.');
+    // --- UPDATED: Background Image Handling ---
+    static setupBackgroundImageControls() {
+        const { backgroundInput, backgroundApplyBtn, localWallpaperSelect, clearBackgroundBtn } = this.elements;
+         if (!backgroundInput || !backgroundApplyBtn || !localWallpaperSelect || !clearBackgroundBtn) {
+             console.error('One or more background control elements not found.');
              return;
          }
 
-         const applyBackground = (imageUrl) => {
-             if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim() !== '') {
-                 // Basic validation: Check if it looks like a URL or data URI
-                 if (imageUrl.startsWith('http') || imageUrl.startsWith('data:image')) {
-                      body.style.backgroundImage = `url('${imageUrl}')`;
-                      StorageManager.setItem(STORAGE_KEYS.BACKGROUND, imageUrl);
-                      backgroundInput.value = imageUrl; // Update input field
-                 } else {
-                      alert("Invalid background image URL. Please provide a valid URL (starting with http/https) or a data URI.");
-                 }
-             } else {
-                 // Clear background
-                 body.style.backgroundImage = 'none';
-                 StorageManager.removeItem(STORAGE_KEYS.BACKGROUND); // Or set to empty string ''
-                 backgroundInput.value = ''; // Clear input field
-             }
-         };
+         // 1. Populate the local wallpaper dropdown
+         this.populateWallpaperSelect();
 
-         // Load saved background
+         // 2. Load saved background on startup
          const savedBackground = StorageManager.getItem(STORAGE_KEYS.BACKGROUND);
          if (savedBackground) {
-             applyBackground(savedBackground);
+             this.applyBackground(savedBackground); // Apply it (this will also update UI state)
+         } else {
+             this.applyBackground(null); // Ensure default state if nothing is saved
          }
 
+         // 3. Add Event Listeners
          backgroundApplyBtn.addEventListener('click', () => {
-             applyBackground(backgroundInput.value.trim());
+             this.applyBackground(backgroundInput.value.trim());
          });
 
-         // Optional: Apply on Enter key in input field
          backgroundInput.addEventListener('keypress', (e) => {
              if (e.key === 'Enter') {
-                 e.preventDefault(); // Prevent form submission if applicable
-                 applyBackground(backgroundInput.value.trim());
+                 e.preventDefault();
+                 this.applyBackground(backgroundInput.value.trim());
              }
          });
+
+         localWallpaperSelect.addEventListener('change', (e) => {
+             this.applyBackground(e.target.value);
+         });
+
+         clearBackgroundBtn.addEventListener('click', () => {
+             this.applyBackground(null); // Pass null or empty string to clear
+         });
+    }
+
+    /**
+     * Populates the local wallpaper select dropdown.
+     */
+    static populateWallpaperSelect() {
+        const { localWallpaperSelect } = this.elements;
+        if (!localWallpaperSelect) return;
+
+        // Clear existing options (keeping the first default option)
+        while (localWallpaperSelect.options.length > 1) {
+            localWallpaperSelect.remove(1);
+        }
+
+        KNOWN_WALLPAPERS.forEach(filename => {
+            const option = document.createElement('option');
+            const filePath = `${WALLPAPERS_DIR}/${filename}`;
+            option.value = filePath;
+            // Make the text more readable (e.g., "Nature 1" from "nature-1.jpg")
+            option.textContent = filename
+                .split('.')[0] // Remove extension
+                .replace(/[-_]/g, ' ') // Replace hyphens/underscores with spaces
+                .replace(/\b\w/g, l => l.toUpperCase()); // Capitalize words
+            localWallpaperSelect.appendChild(option);
+        });
+    }
+
+    /**
+     * Applies the selected background (URL or local) and updates storage/UI.
+     * @param {string | null} value - The background value (URL, local path, or null/empty to clear).
+     */
+    static applyBackground(value) {
+        const { body, backgroundInput, localWallpaperSelect } = this.elements;
+        const isClearing = !value || value.trim() === '';
+
+        if (isClearing) {
+            // Clear background
+            body.style.backgroundImage = ''; // Revert to CSS default (gradient)
+            StorageManager.removeItem(STORAGE_KEYS.BACKGROUND);
+             body.style.setProperty('--bg-image-set', '0'); // Hide overlay if used
+
+            // Reset UI controls
+            if (backgroundInput) backgroundInput.value = '';
+            if (localWallpaperSelect) localWallpaperSelect.value = ''; // Reset dropdown
+
+        } else if (value.startsWith(WALLPAPERS_DIR + '/')) {
+            // Apply local wallpaper
+            try {
+                 // Check if chrome.runtime is available (it should be in an extension context)
+                 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+                    const fullUrl = chrome.runtime.getURL(value);
+                    body.style.backgroundImage = `url('${fullUrl}')`;
+                    StorageManager.setItem(STORAGE_KEYS.BACKGROUND, value); // Store the relative path
+                    body.style.setProperty('--bg-image-set', '1'); // Show overlay
+
+                    // Update UI
+                    if (backgroundInput) backgroundInput.value = ''; // Clear URL input
+                    if (localWallpaperSelect) localWallpaperSelect.value = value; // Set dropdown
+                 } else {
+                    console.error("chrome.runtime.getURL is not available. Cannot load local wallpaper.");
+                    alert("Error: Cannot access extension resources to load local wallpaper.");
+                    this.applyBackground(null); // Attempt to clear on error
+                 }
+            } catch (error) {
+                console.error(`Error applying local wallpaper '${value}':`, error);
+                alert(`Failed to apply local wallpaper. Ensure it's listed in manifest.json's web_accessible_resources.`);
+                this.applyBackground(null); // Attempt to clear on error
+            }
+
+        } else if (value.startsWith('http') || value.startsWith('data:')) {
+            // Apply online URL wallpaper
+             body.style.backgroundImage = `url('${value}')`;
+             StorageManager.setItem(STORAGE_KEYS.BACKGROUND, value); // Store the URL
+             body.style.setProperty('--bg-image-set', '1'); // Show overlay
+
+             // Update UI
+             if (backgroundInput) backgroundInput.value = value; // Set URL input
+             if (localWallpaperSelect) localWallpaperSelect.value = ''; // Reset dropdown
+
+        } else {
+            // Invalid input
+            alert("Invalid background input. Please provide a valid URL (starting with http/https or data:) or select a local wallpaper.");
+            // Optionally clear the invalid input field
+             if (backgroundInput && backgroundInput.value === value) {
+                 backgroundInput.value = '';
+             }
+        }
     }
 
      // --- Modal Management ---
@@ -1179,49 +1278,47 @@ function createLinkCard(url, name, idOrIndex, isBookmark = false) {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("DOM Content Loaded - Initializing New Tab");
 
-    // Initialize UI Manager first to cache elements
+    // Initialize UI Manager first (this now also handles loading the initial background)
     UIManager.init();
 
     // Setup Quick Links Manager
     const quickLinksManager = new EntityManager(
         STORAGE_KEYS.QUICK_LINKS,
         DOM_SELECTORS.QUICK_LINKS_CONTAINER,
-        DOM_SELECTORS.ADD_LINK_BTN, // Selector for the add button within the container
-        createLinkCard // Pass the card creator function
+        DOM_SELECTORS.ADD_LINK_BTN,
+        createLinkCard
     );
+    quickLinksManager.render(); // Initial render
 
-    // Initial render of Quick Links
-    quickLinksManager.render();
-
-     // Setup Import/Export Buttons (needs quickLinksManager instance)
-     ImportExportManager.setupImportExportButtons(
-         DOM_SELECTORS.BACKGROUND_SETTINGS, // Where to add the buttons
-         quickLinksManager
-     );
+    // Setup Import/Export Buttons
+    ImportExportManager.setupImportExportButtons(
+        DOM_SELECTORS.BACKGROUND_SETTINGS,
+        quickLinksManager
+    );
 
     // Setup Drag and Drop for Quick Links
     DragDropManager.setupDragDrop(
         DOM_SELECTORS.QUICK_LINKS_CONTAINER,
-        () => quickLinksManager.getEntities(), // Provide a function to get entities
-        (updatedEntities) => quickLinksManager.saveEntities(updatedEntities) // Provide a function to save entities
+        () => quickLinksManager.getEntities(),
+        (updatedEntities) => quickLinksManager.saveEntities(updatedEntities)
     );
 
-    // Event Delegation for Quick Links Container (Edit/Delete/Add)
+    // Event Delegation for Quick Links Container
     const quickLinksContainer = document.querySelector(DOM_SELECTORS.QUICK_LINKS_CONTAINER);
     if (quickLinksContainer) {
         quickLinksContainer.addEventListener('click', (e) => {
             const target = e.target;
             const editBtn = target.closest(`.${CSS_CLASSES.EDIT_BTN}`);
             const deleteBtn = target.closest(`.${CSS_CLASSES.DELETE_BTN}`);
-            const addBtn = target.closest(DOM_SELECTORS.ADD_LINK_BTN); // Matches the ID
+            const addBtn = target.closest(DOM_SELECTORS.ADD_LINK_BTN);
 
-            if (editBtn) {
+            if (editBtn && !editBtn.closest(`.${CSS_CLASSES.BOOKMARK_CARD}`)) { // Ensure it's not a bookmark edit button
                  e.stopPropagation();
                 const index = parseInt(editBtn.getAttribute('data-index'), 10);
                 UIManager.showModal('edit', quickLinksManager, index);
-            } else if (deleteBtn) {
+            } else if (deleteBtn && !deleteBtn.closest(`.${CSS_CLASSES.BOOKMARK_CARD}`)) { // Ensure it's not a bookmark delete button
                  e.stopPropagation();
-                 if (confirm('Are you sure you want to delete this quick link?')) { // Add confirmation
+                 if (confirm('Are you sure you want to delete this quick link?')) {
                       const index = parseInt(deleteBtn.getAttribute('data-index'), 10);
                       quickLinksManager.removeEntity(index);
                  }
@@ -1234,61 +1331,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("Quick Links container not found for event delegation.");
     }
 
-    // Load and Render Bookmarks (Bookmark edit/delete listeners are added within renderBookmarks)
-    if (BookmarksManager.isAvailable()) {
+    // Load and Render Bookmarks
+     if (BookmarksManager.isAvailable()) {
          await BookmarksManager.renderBookmarks(
              DOM_SELECTORS.BOOKMARKS_CONTAINER,
-              // Add Callback
-              () => UIManager.showModal('add', null, null, { isBookmark: true }),
-              // Edit Callback
-              async (bookmarkData) => {
-                  // Fetch full bookmark details if necessary, or use provided data
-                  const fullBookmark = await BookmarksManager.getBookmark(bookmarkData.id);
-                  if (fullBookmark) {
-                      UIManager.showModal('edit', null, null, { ...fullBookmark, isBookmark: true });
-                  } else {
-                      alert("Could not retrieve bookmark details for editing.");
+             // Add Callback
+             () => UIManager.showModal('add', null, null, { isBookmark: true }),
+             // Edit Callback (handles both quick links and bookmarks via UIManager.showModal logic now)
+             async (bookmarkData) => {
+                UIManager.showModal('edit', null, null, { ...bookmarkData, isBookmark: true });
+             },
+             // Delete Callback
+             async (bookmarkId) => {
+                  if (confirm('Are you sure you want to delete this bookmark?')) {
+                      try {
+                          await BookmarksManager.removeBookmark(bookmarkId);
+                          // Re-render bookmarks after delete
+                          await BookmarksManager.renderBookmarks(
+                              DOM_SELECTORS.BOOKMARKS_CONTAINER,
+                              () => UIManager.showModal('add', null, null, { isBookmark: true }),
+                              (bData) => UIManager.showModal('edit', null, null, { ...bData, isBookmark: true }),
+                              async (bId) => { /* Delete logic - called recursively, safe */ }
+                          );
+                      } catch (error) {
+                          console.error("Failed to delete bookmark:", error);
+                          alert("Failed to delete bookmark.");
+                      }
                   }
-              },
-              // Delete Callback
-              async (bookmarkId) => {
-                   if (confirm('Are you sure you want to delete this bookmark?')) {
-                       try {
-                           await BookmarksManager.removeBookmark(bookmarkId);
-                           // Re-render after delete (renderBookmarks clears and rebuilds)
-                            await BookmarksManager.renderBookmarks(
-                                DOM_SELECTORS.BOOKMARKS_CONTAINER,
-                                () => UIManager.showModal('add', null, null, { isBookmark: true }),
-                                async (bData) => {
-                                     const fullB = await BookmarksManager.getBookmark(bData.id);
-                                     if(fullB) UIManager.showModal('edit', null, null, { ...fullB, isBookmark: true });
-                                 },
-                                 async (bId) => { /* Delete logic already here */ } // Can be simplified if needed
-                            );
-                       } catch (error) {
-                           console.error("Failed to delete bookmark:", error);
-                           alert("Failed to delete bookmark.");
-                       }
-                   }
-               }
-          );
-    } else {
-        // Hide bookmark section if API is unavailable
-        const bookmarksSection = document.querySelector(DOM_SELECTORS.BOOKMARKS_SECTION);
-        if (bookmarksSection) {
-            bookmarksSection.classList.add(CSS_CLASSES.HIDDEN);
-            console.log("Chrome Bookmarks API not available, hiding bookmarks section.");
-        }
-    }
+              }
+         );
+     } else {
+         const bookmarksSection = document.querySelector(DOM_SELECTORS.BOOKMARKS_SECTION);
+         if (bookmarksSection) bookmarksSection.classList.add(CSS_CLASSES.HIDDEN);
+     }
 
-
-    // Setup Accessibility Features (after initial content render)
-    AccessibilityManager.setupKeyboardNavigation(); // Sets up container navigation
-    // Enhancements below now use MutationObservers, apply to containers
-     AccessibilityManager.enhanceLinkAccessibility(DOM_SELECTORS.QUICK_LINKS_CONTAINER);
-     AccessibilityManager.enhanceLinkAccessibility(DOM_SELECTORS.BOOKMARKS_CONTAINER);
-     AccessibilityManager.lazyLoadFavicons(DOM_SELECTORS.QUICK_LINKS_CONTAINER);
-     AccessibilityManager.lazyLoadFavicons(DOM_SELECTORS.BOOKMARKS_CONTAINER);
+    // Setup Accessibility Features
+    AccessibilityManager.setupKeyboardNavigation();
+    AccessibilityManager.enhanceLinkAccessibility(DOM_SELECTORS.QUICK_LINKS_CONTAINER);
+    AccessibilityManager.enhanceLinkAccessibility(DOM_SELECTORS.BOOKMARKS_CONTAINER);
+    AccessibilityManager.lazyLoadFavicons(DOM_SELECTORS.QUICK_LINKS_CONTAINER);
+    AccessibilityManager.lazyLoadFavicons(DOM_SELECTORS.BOOKMARKS_CONTAINER);
 
     console.log("New Tab Initialization Complete.");
 });
