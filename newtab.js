@@ -60,11 +60,9 @@ const ARIA_LABELS = {
 
 // --- NEW: Local Wallpaper Config ---
 const WALLPAPERS_DIR = 'wallpapers';
-// ** IMPORTANT: List the filenames of the images you added to the wallpapers folder here **
 const KNOWN_WALLPAPERS = [
     '01.jpg',
     '02.jpg',
-    // Add more filenames as needed
 ];
 
 // --- Utilities ---
@@ -89,13 +87,11 @@ function getElementByIdSafe(id, contextName = '') {
  * @returns {string} The favicon service URL.
  */
 function getFaviconUrl(url) {
-    // Using a reliable favicon service (duckduckgo is often good)
     try {
         const domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname;
         return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
     } catch (e) {
         console.warn(`Could not parse URL for favicon: ${url}`, e);
-        // Fallback or placeholder
         return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill="%23ccc" d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm0 14.5a6.5 6.5 0 1 1 0-13a6.5 6.5 0 0 1 0 13zM8 4a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V5a1 1 0 0 1 1-1zm0 6a1 1 0 1 1 0 2a1 1 0 0 1 0-2z"/></svg>';
     }
 }
@@ -106,17 +102,13 @@ class StorageManager {
     static getItem(key, defaultValue = null) {
         try {
             const item = localStorage.getItem(key);
-            // Allow null as a valid stored value, differentiate from not found
             if (item === null) return defaultValue;
-            // Check if it looks like JSON before parsing
             if (item.startsWith('{') || item.startsWith('[')) {
                 return JSON.parse(item);
             }
-            // Return raw string if not JSON (for simple values like theme/background)
             return item;
         } catch (error) {
             console.error(`Error retrieving ${key} from localStorage:`, error);
-            // Clear potentially corrupted item
             localStorage.removeItem(key);
             return defaultValue;
         }
@@ -126,11 +118,10 @@ class StorageManager {
         try {
             const valueToStore = (typeof value === 'object' && value !== null)
                 ? JSON.stringify(value)
-                : String(value); // Store primitives as strings
+                : String(value);
             localStorage.setItem(key, valueToStore);
         } catch (error) {
             console.error(`Error saving ${key} to localStorage:`, error);
-            // Potentially handle quota exceeded error
         }
     }
 
@@ -158,7 +149,6 @@ class AccessibilityManager {
             container.setAttribute('aria-label', label);
 
             container.addEventListener('keydown', (e) => {
-                // Focus only focusable link cards (not add buttons, not hidden ones)
                 const links = Array.from(container.querySelectorAll(`.${CSS_CLASSES.LINK_CARD}:not(.${CSS_CLASSES.ADD_LINK_CARD}):not(.${CSS_CLASSES.HIDDEN})`));
                 if (links.length === 0) return;
 
@@ -168,17 +158,17 @@ class AccessibilityManager {
 
                 switch (e.key) {
                     case 'ArrowRight':
-                    case 'ArrowDown': // Allow vertical nav too
+                    case 'ArrowDown':
                         e.preventDefault();
                         nextIndex = (currentIndex + 1) % links.length;
                         break;
                     case 'ArrowLeft':
-                    case 'ArrowUp': // Allow vertical nav too
+                    case 'ArrowUp':
                         e.preventDefault();
                         nextIndex = (currentIndex - 1 + links.length) % links.length;
                         break;
                     case 'Enter':
-                    case ' ': // Allow spacebar activation
+                    case ' ': 
                         if (currentIndex !== -1 && document.activeElement === links[currentIndex]) {
                             e.preventDefault();
                             links[currentIndex].click();
@@ -208,7 +198,6 @@ class AccessibilityManager {
              return;
         }
 
-        // Use MutationObserver to handle dynamically added links
         const observer = new MutationObserver((mutationsList) => {
             for (const mutation of mutationsList) {
                 if (mutation.type === 'childList') {
@@ -216,7 +205,6 @@ class AccessibilityManager {
                         if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains(CSS_CLASSES.LINK_CARD)) {
                             this.applyAccessibilityAttributes(node);
                         }
-                        // Also check children if a wrapper was added
                         if (node.nodeType === Node.ELEMENT_NODE) {
                             node.querySelectorAll(`.${CSS_CLASSES.LINK_CARD}`).forEach(card => this.applyAccessibilityAttributes(card));
                         }
@@ -225,43 +213,35 @@ class AccessibilityManager {
             }
         });
 
-        // Apply to existing cards
         container.querySelectorAll(`.${CSS_CLASSES.LINK_CARD}`).forEach(card => this.applyAccessibilityAttributes(card));
 
-        // Observe the container for future changes
         observer.observe(container, { childList: true, subtree: true });
     }
 
      static applyAccessibilityAttributes(card) {
-         // Don't make 'add' buttons act like links
          if (card.classList.contains(CSS_CLASSES.ADD_LINK_CARD)) {
             card.setAttribute('role', 'button');
             card.setAttribute('tabindex', '0');
             card.setAttribute('aria-label', card.querySelector('p')?.textContent || 'Add new item');
-            // Add keyboard interaction for add buttons too
             card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     card.click();
                 }
             });
-            return; // Skip link-specific attributes for add card
+            return;
          }
 
          card.setAttribute('tabindex', '0');
-         card.setAttribute('role', 'link'); // Use 'link' role since they navigate
+         card.setAttribute('role', 'link');
          const titleElement = card.querySelector('p');
          const url = card.getAttribute('data-url');
          card.setAttribute('aria-label', titleElement?.textContent || `Link to ${url}` || 'Unnamed link');
 
-         // Keyboard interaction for regular links (handled by container nav, but space/enter specifically)
-         // Check if listener already exists to avoid duplicates if re-rendered
-        if (!card.dataset.keyListenerAdded) {
+         if (!card.dataset.keyListenerAdded) {
              card.addEventListener('keydown', (e) => {
                  if (e.key === 'Enter' || e.key === ' ') {
-                     // Prevent scrolling on spacebar
                      e.preventDefault();
-                     // Ensure click navigates/opens the link
                      card.click();
                  }
              });
@@ -277,17 +257,16 @@ class AccessibilityManager {
          }
 
         const placeholderSvg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23eee"/></svg>';
-
         const imageObserver = new IntersectionObserver((entries, observer) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const img = entry.target;
                     const actualSrc = img.dataset.src;
-                    if (actualSrc && img.src !== actualSrc) { // Load only if src is different
+                    if (actualSrc && img.src !== actualSrc) {
                        img.src = actualSrc;
-                       img.onload = () => img.classList.remove('loading'); // Optional: remove loading state
-                       img.onerror = () => { // Handle loading errors
-                            img.src = placeholderSvg; // Fallback to placeholder on error
+                       img.onload = () => img.classList.remove('loading');
+                       img.onerror = () => { 
+                            img.src = placeholderSvg; 
                             img.classList.remove('loading');
                             console.warn(`Failed to load favicon: ${actualSrc}`);
                        };
@@ -295,46 +274,43 @@ class AccessibilityManager {
                     observer.unobserve(img);
                 }
             });
-        }, { rootMargin: '100px' }); // Load slightly before entering viewport
+        }, { rootMargin: '100px' });
 
-        // Use MutationObserver to catch dynamically added images
          const setupImage = (img) => {
-            if (img.dataset.lazyLoaded) return; // Already processed
+            if (img.dataset.lazyLoaded) return;
 
-            const currentSrc = img.getAttribute('src'); // Get the intended src attribute
+            const currentSrc = img.getAttribute('src');
             if (!img.dataset.src && currentSrc && !currentSrc.startsWith('data:')) {
-                img.dataset.src = currentSrc; // Store the intended src
+                img.dataset.src = currentSrc;
             }
 
             if (img.dataset.src) {
-                 img.src = placeholderSvg; // Set placeholder
-                 img.classList.add('loading'); // Optional: add loading class for styling
+                 img.src = placeholderSvg;
+                 img.classList.add('loading');
                  imageObserver.observe(img);
-                 img.dataset.lazyLoaded = 'true'; // Mark as processed
+                 img.dataset.lazyLoaded = 'true';
             }
          };
 
         const mutationObserver = new MutationObserver((mutationsList) => {
-             for (const mutation of mutationsList) {
-                 if (mutation.type === 'childList') {
-                     mutation.addedNodes.forEach(node => {
-                         if (node.nodeType === Node.ELEMENT_NODE) {
-                             if (node.tagName === 'IMG' && node.closest(`.${CSS_CLASSES.LINK_CARD}`)) {
-                                 setupImage(node);
+            for (const mutation of mutationsList) {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            if (node.tagName === 'IMG' && node.closest(`.${CSS_CLASSES.LINK_CARD}`)) {
+                                setupImage(node);
                              } else {
                                  node.querySelectorAll(`.${CSS_CLASSES.LINK_CARD} img`).forEach(setupImage);
                              }
                          }
                      });
-                 }
-             }
-         });
+                }
+            }
+        });
 
-         // Setup existing images
-         container.querySelectorAll(`.${CSS_CLASSES.LINK_CARD} img`).forEach(setupImage);
+        container.querySelectorAll(`.${CSS_CLASSES.LINK_CARD} img`).forEach(setupImage);
 
-         // Observe container
-         mutationObserver.observe(container, { childList: true, subtree: true });
+        mutationObserver.observe(container, { childList: true, subtree: true });
     }
 }
 
@@ -353,25 +329,23 @@ class DragDropManager {
             if (linkCard) {
                 linkCard.classList.add(CSS_CLASSES.DRAGGING);
                 draggedItemIndex = parseInt(linkCard.getAttribute('data-index'), 10);
-                // Use index in dataTransfer for simplicity here, could use unique ID if available
                 e.dataTransfer.setData('text/plain', draggedItemIndex);
                 e.dataTransfer.effectAllowed = 'move';
             } else {
-                e.preventDefault(); // Prevent dragging if not a valid card
+                e.preventDefault();
             }
         });
 
         container.addEventListener('dragend', (e) => {
-             // Use event delegation target if needed, but querySelector is safer if structure changes
             const draggingElement = container.querySelector(`.${CSS_CLASSES.DRAGGING}`);
             if (draggingElement) {
                 draggingElement.classList.remove(CSS_CLASSES.DRAGGING);
             }
-            draggedItemIndex = null; // Reset index
+            draggedItemIndex = null;
         });
 
         container.addEventListener('dragover', (e) => {
-            e.preventDefault(); // Necessary to allow drop
+            e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
 
             const draggingElement = container.querySelector(`.${CSS_CLASSES.DRAGGING}`);
@@ -380,7 +354,6 @@ class DragDropManager {
             const afterElement = this.getDragAfterElement(container, e.clientY);
 
             if (afterElement == null) {
-                // Append to the end, but before the 'add' button if it exists
                 const addBtn = container.querySelector(`.${CSS_CLASSES.ADD_LINK_CARD}`);
                 if (addBtn) {
                     container.insertBefore(draggingElement, addBtn);
@@ -394,54 +367,43 @@ class DragDropManager {
 
         container.addEventListener('drop', (e) => {
             e.preventDefault();
-             const draggingElement = container.querySelector(`.${CSS_CLASSES.DRAGGING}`); // Find the element that was just dropped
-             if (!draggingElement || draggedItemIndex === null) return; // Check if we have the element and its original index
+            const draggingElement = container.querySelector(`.${CSS_CLASSES.DRAGGING}`);
+            if (!draggingElement || draggedItemIndex === null) return;
 
-            // Get the current state of entities
             const entities = getEntitiesCallback();
             if (!entities || draggedItemIndex >= entities.length) {
-                 console.error("Error during drop: Invalid entity state or index.");
-                 return; // Prevent errors if data is out of sync
-             }
+                console.error("Error during drop: Invalid entity state or index.");
+                return;
+            }
 
-             // Remove the dragged entity from its original position
-             const [draggedEntity] = entities.splice(draggedItemIndex, 1);
+            const [draggedEntity] = entities.splice(draggedItemIndex, 1);
 
-            // Find the new index based on the final DOM order
             const currentCards = Array.from(container.querySelectorAll(`.${CSS_CLASSES.LINK_CARD}:not(.${CSS_CLASSES.ADD_LINK_CARD})`));
             const newIndex = currentCards.indexOf(draggingElement);
 
             if (newIndex > -1) {
-                // Insert the entity at the new position
                 entities.splice(newIndex, 0, draggedEntity);
-                // Save the reordered entities
                 saveEntitiesCallback(entities);
-                // Re-render or update indices immediately after save
-                // Note: If saveEntitiesCallback triggers a re-render, this might be redundant
-                // If not, manually update data-index attributes here
-                 currentCards.forEach((card, index) => card.setAttribute('data-index', index));
+                currentCards.forEach((card, index) => card.setAttribute('data-index', index));
             } else {
-                 console.error("Could not determine new index after drop.");
-                 // Optionally revert or re-fetch state
-             }
+                console.error("Could not determine new index after drop.");
+            }
         });
     }
 
     static getDragAfterElement(container, y) {
-        // Select only actual draggable items, excluding the one being dragged and the add button
         const draggableElements = [...container.querySelectorAll(`.${CSS_CLASSES.LINK_CARD}:not(.${CSS_CLASSES.DRAGGING}):not(.${CSS_CLASSES.ADD_LINK_CARD})`)];
 
         return draggableElements.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
             const offset = y - box.top - box.height / 2;
 
-            // Find the element just below the cursor
             if (offset < 0 && offset > closest.offset) {
                 return { offset: offset, element: child };
             } else {
                 return closest;
             }
-        }, { offset: Number.NEGATIVE_INFINITY }).element; // Default to null (append)
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 }
 
@@ -453,19 +415,18 @@ class ImportExportManager {
             return;
         }
 
-        const exportString = JSON.stringify(data, null, 2); // Pretty print JSON
+        const exportString = JSON.stringify(data, null, 2);
         const blob = new Blob([exportString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
 
         const a = document.createElement('a');
-        a.style.display = 'none'; // Hide the link
+        a.style.display = 'none';
         a.href = url;
         a.download = `${filenamePrefix}-export-${new Date().toISOString().split('T')[0]}.json`;
 
         document.body.appendChild(a);
         a.click();
 
-        // Clean up
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
@@ -473,7 +434,7 @@ class ImportExportManager {
     static importData(key, validationFn, confirmationMsg, successCallback) {
         const input = document.createElement('input');
         input.type = 'file';
-        input.accept = '.json,application/json'; // Be explicit
+        input.accept = '.json,application/json';
         input.style.display = 'none';
 
         input.onchange = (e) => {
@@ -492,7 +453,7 @@ class ImportExportManager {
 
                     if (confirm(confirmationMsg)) {
                         StorageManager.setItem(key, importedData);
-                        if (successCallback) successCallback(importedData); // Pass data if needed
+                        if (successCallback) successCallback(importedData);
                         alert('Data imported successfully!');
                     }
                 } catch (error) {
@@ -508,18 +469,17 @@ class ImportExportManager {
             reader.readAsText(file);
         };
 
-        document.body.appendChild(input); // Required for some browsers
+        document.body.appendChild(input);
         input.click();
-        document.body.removeChild(input); // Clean up
+        document.body.removeChild(input);
     }
 
-     // Specific validation for Quick Links
-     static validateQuickLinksImport(data) {
+    static validateQuickLinksImport(data) {
         return Array.isArray(data) && data.every(link =>
             link && typeof link === 'object' && link.url && link.name &&
             typeof link.url === 'string' && typeof link.name === 'string'
-         );
-     }
+        );
+    }
 
     static setupImportExportButtons(containerSelector, quickLinksManager) {
         const settingsContainer = document.querySelector(containerSelector);
@@ -528,13 +488,12 @@ class ImportExportManager {
             return;
         }
 
-        // Check if controls already exist
         if (settingsContainer.querySelector(DOM_SELECTORS.IMPORT_EXPORT_CONTAINER_CLASS)) {
             return;
         }
 
         const importExportContainer = document.createElement('div');
-        importExportContainer.className = DOM_SELECTORS.IMPORT_EXPORT_CONTAINER_CLASS.substring(1); // Remove leading '.'
+        importExportContainer.className = DOM_SELECTORS.IMPORT_EXPORT_CONTAINER_CLASS.substring(1);
         importExportContainer.innerHTML = `
             <h4>Data Management</h4>
             <div class="setting-item">
@@ -543,10 +502,8 @@ class ImportExportManager {
             </div>
         `;
 
-        // Append controls (e.g., after background settings)
         settingsContainer.appendChild(importExportContainer);
 
-        // Add listeners safely
         const exportBtn = getElementByIdSafe(DOM_SELECTORS.EXPORT_LINKS_BTN);
         const importBtn = getElementByIdSafe(DOM_SELECTORS.IMPORT_LINKS_BTN);
 
@@ -559,7 +516,7 @@ class ImportExportManager {
                 STORAGE_KEYS.QUICK_LINKS,
                 this.validateQuickLinksImport,
                 'Are you sure you want to replace ALL existing quick links with the imported ones?',
-                () => quickLinksManager.render() // Re-render after successful import
+                () => quickLinksManager.render()
             ));
         }
     }
@@ -569,35 +526,33 @@ class EntityManager {
     constructor(storageKey, containerSelector, addButtonSelector, cardCreatorFn) {
         this.storageKey = storageKey;
         this.container = document.querySelector(containerSelector);
-        this.addButton = this.container?.querySelector(addButtonSelector); // Find add button within container
+        this.addButton = this.container?.querySelector(addButtonSelector);
         this.cardCreator = cardCreatorFn;
 
         if (!this.container) {
             console.error(`Entity container '${containerSelector}' not found.`);
         }
-        // Add button might be dynamic, find it during render if needed
     }
 
     getEntities() {
-        return StorageManager.getItem(this.storageKey, []); // Default to empty array
+        return StorageManager.getItem(this.storageKey, []);
     }
 
     saveEntities(entities) {
         StorageManager.setItem(this.storageKey, entities);
-        this.render(); // Re-render after saving to reflect changes
+        this.render();
     }
 
-    addEntity(data) { // Accepts an object { url, name }
+    addEntity(data) {
         const entities = this.getEntities();
-        // Optional: Check for duplicates?
         entities.push(data);
         this.saveEntities(entities);
     }
 
-    updateEntity(index, data) { // Accepts an object { url, name }
+    updateEntity(index, data) {
         const entities = this.getEntities();
         if (index >= 0 && index < entities.length) {
-            entities[index] = { ...entities[index], ...data }; // Merge data, keeps potential other props
+            entities[index] = { ...entities[index], ...data };
             this.saveEntities(entities);
         } else {
             console.error(`Invalid index ${index} for updateEntity.`);
@@ -618,28 +573,26 @@ class EntityManager {
         if (!this.container) return;
 
         const entities = this.getEntities();
-        // Preserve the "Add" button if it exists and is managed by this manager
-        const addButtonElement = this.addButton || this.container.querySelector(`.${CSS_CLASSES.ADD_LINK_CARD}`); // Try to find if not cached
+        const addButtonElement = this.addButton || this.container.querySelector(`.${CSS_CLASSES.ADD_LINK_CARD}`);
 
-        // Clear only the entity cards, not the add button
         this.container.querySelectorAll(`.${CSS_CLASSES.LINK_CARD}:not(.${CSS_CLASSES.ADD_LINK_CARD})`).forEach(card => card.remove());
 
-        // Render entities and insert them *before* the add button
         entities.forEach((entity, index) => {
-            // Ensure entity has needed props; provide defaults if necessary
             const url = entity?.url ?? '';
             const name = entity?.name ?? 'Unnamed Link';
-            const card = this.cardCreator(url, name, index, false); // false = not a bookmark card
+            const card = this.cardCreator(url, name, index, false);
             if (addButtonElement) {
                 this.container.insertBefore(card, addButtonElement);
             } else {
-                this.container.appendChild(card); // Append if no add button
+                this.container.appendChild(card);
             }
         });
 
-        // Optionally: Re-enhance accessibility & lazy loading if not handled by observers
-        // AccessibilityManager.enhanceLinkAccessibility(this.container.id);
-        // AccessibilityManager.lazyLoadFavicons(this.container.id);
+        if (addButtonElement) {
+            this.container.insertBefore(addButtonElement, this.container.firstChild);
+        } else {
+            this.container.appendChild(addButtonElement);
+        }
     }
 }
 
@@ -687,7 +640,7 @@ class UIManager {
         this.setupSearchForm(DOM_SELECTORS.SEARCH_FORM, DOM_SELECTORS.GOOGLE_SEARCH_INPUT);
         this.setupSearchFilter(DOM_SELECTORS.BOOKMARK_SEARCH_INPUT, DOM_SELECTORS.BOOKMARKS_CONTAINER);
         this.setupThemeToggle();
-        this.setupBackgroundImageControls(); // Renamed setup function
+        this.setupBackgroundImageControls();
         this.setupSettingsToggle();
         this.setupClockAndDate();
         this.setupModal();
@@ -702,10 +655,9 @@ class UIManager {
         }
 
         form.addEventListener('submit', (e) => {
-            // Allow submission even if empty, Google handles it. Add validation if needed.
-            // if (input.value.trim() === '') {
-            //     e.preventDefault();
-            // }
+            if (input.value.trim() === '') {
+                e.preventDefault();
+            }
         });
     }
 
@@ -717,16 +669,15 @@ class UIManager {
             return;
         }
 
-        searchInput.addEventListener('input', function() { // Use function for 'this'
+        searchInput.addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase().trim();
             const cards = container.querySelectorAll(`.${CSS_CLASSES.LINK_CARD}:not(.${CSS_CLASSES.ADD_LINK_CARD})`);
 
             cards.forEach(card => {
-                const title = card.getAttribute('data-title') || ''; // Already lowercase from card creator? Verify.
+                const title = card.getAttribute('data-title') || '';
                 const url = card.getAttribute('data-url') || '';
                 const isVisible = searchTerm === '' || title.includes(searchTerm) || url.toLowerCase().includes(searchTerm);
                 card.classList.toggle(CSS_CLASSES.HIDDEN, !isVisible);
-                // Ensure hidden items aren't keyboard accessible
                 card.setAttribute('tabindex', isVisible ? '0' : '-1');
                 card.setAttribute('aria-hidden', !isVisible);
             });
@@ -744,14 +695,14 @@ class UIManager {
             backgroundSettings.classList.remove(CSS_CLASSES.HIDDEN);
             settingsToggle.classList.add(CSS_CLASSES.ACTIVE);
             settingsToggle.setAttribute('aria-expanded', 'true');
-            backgroundSettings.focus(); // Focus the panel for accessibility
+            backgroundSettings.focus();
         };
 
         const closeSettings = () => {
             backgroundSettings.classList.add(CSS_CLASSES.HIDDEN);
             settingsToggle.classList.remove(CSS_CLASSES.ACTIVE);
             settingsToggle.setAttribute('aria-expanded', 'false');
-            settingsToggle.focus(); // Return focus to the toggle
+            settingsToggle.focus();
         };
 
         settingsToggle.setAttribute('aria-controls', backgroundSettings.id);
@@ -769,14 +720,12 @@ class UIManager {
 
         closeSettingsBtn.addEventListener('click', closeSettings);
 
-        // Close on escape key
-         backgroundSettings.addEventListener('keydown', (event) => {
-             if (event.key === 'Escape') {
-                 closeSettings();
-             }
-         });
+        backgroundSettings.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeSettings();
+            }
+        });
 
-        // Close settings when clicking outside
         document.addEventListener('click', (event) => {
             if (!backgroundSettings.classList.contains(CSS_CLASSES.HIDDEN) &&
                 !backgroundSettings.contains(event.target) &&
@@ -797,67 +746,54 @@ class UIManager {
              body.classList.toggle(CSS_CLASSES.DARK_THEME, theme === 'dark');
              themeSwitch.checked = (theme === 'dark');
              StorageManager.setItem(STORAGE_KEYS.THEME, theme);
-             // Ensure related elements update if needed (e.g., settings panel background)
         };
 
-        // Load saved theme on init
-        const savedTheme = StorageManager.getItem(STORAGE_KEYS.THEME, 'light'); // Default to light
+        const savedTheme = StorageManager.getItem(STORAGE_KEYS.THEME, 'light');
         applyTheme(savedTheme);
-
-        // Listen for changes
-        themeSwitch.addEventListener('change', function() { // Use function for 'this'
+        themeSwitch.addEventListener('change', function() {
             applyTheme(this.checked ? 'dark' : 'light');
         });
     }
 
-    // --- UPDATED: Background Image Handling ---
     static setupBackgroundImageControls() {
         const { backgroundInput, backgroundApplyBtn, localWallpaperSelect, clearBackgroundBtn } = this.elements;
-         if (!backgroundInput || !backgroundApplyBtn || !localWallpaperSelect || !clearBackgroundBtn) {
-             console.error('One or more background control elements not found.');
-             return;
-         }
+        if (!backgroundInput || !backgroundApplyBtn || !localWallpaperSelect || !clearBackgroundBtn) {
+            console.error('One or more background control elements not found.');
+            return;
+        }
 
-         // 1. Populate the local wallpaper dropdown
-         this.populateWallpaperSelect();
+        this.populateWallpaperSelect();
 
-         // 2. Load saved background on startup
-         const savedBackground = StorageManager.getItem(STORAGE_KEYS.BACKGROUND);
-         if (savedBackground) {
-             this.applyBackground(savedBackground); // Apply it (this will also update UI state)
-         } else {
-             this.applyBackground(null); // Ensure default state if nothing is saved
-         }
+        const savedBackground = StorageManager.getItem(STORAGE_KEYS.BACKGROUND);
+        if (savedBackground) {
+            this.applyBackground(savedBackground);
+        } else {
+            this.applyBackground(null);
+        }
+        backgroundApplyBtn.addEventListener('click', () => {
+            this.applyBackground(backgroundInput.value.trim());
+        });
 
-         // 3. Add Event Listeners
-         backgroundApplyBtn.addEventListener('click', () => {
-             this.applyBackground(backgroundInput.value.trim());
-         });
+        backgroundInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.applyBackground(backgroundInput.value.trim());
+            }
+        });
 
-         backgroundInput.addEventListener('keypress', (e) => {
-             if (e.key === 'Enter') {
-                 e.preventDefault();
-                 this.applyBackground(backgroundInput.value.trim());
-             }
-         });
+        localWallpaperSelect.addEventListener('change', (e) => {
+            this.applyBackground(e.target.value);
+        });
 
-         localWallpaperSelect.addEventListener('change', (e) => {
-             this.applyBackground(e.target.value);
-         });
-
-         clearBackgroundBtn.addEventListener('click', () => {
-             this.applyBackground(null); // Pass null or empty string to clear
-         });
+        clearBackgroundBtn.addEventListener('click', () => {
+            this.applyBackground(null);
+        });
     }
 
-    /**
-     * Populates the local wallpaper select dropdown.
-     */
     static populateWallpaperSelect() {
         const { localWallpaperSelect } = this.elements;
         if (!localWallpaperSelect) return;
 
-        // Clear existing options (keeping the first default option)
         while (localWallpaperSelect.options.length > 1) {
             localWallpaperSelect.remove(1);
         }
@@ -866,159 +802,168 @@ class UIManager {
             const option = document.createElement('option');
             const filePath = `${WALLPAPERS_DIR}/${filename}`;
             option.value = filePath;
-            // Make the text more readable (e.g., "Nature 1" from "nature-1.jpg")
             option.textContent = filename
-                .split('.')[0] // Remove extension
-                .replace(/[-_]/g, ' ') // Replace hyphens/underscores with spaces
-                .replace(/\b\w/g, l => l.toUpperCase()); // Capitalize words
+                .split('.')[0]
+                .replace(/-/g, ' ')
+                .replace(/\b\w/g, char => char.toUpperCase());
             localWallpaperSelect.appendChild(option);
         });
     }
 
-    /**
-     * Applies the selected background (URL or local) and updates storage/UI.
-     * @param {string | null} value - The background value (URL, local path, or null/empty to clear).
-     */
+    static populateWallpaperSelect() {
+        const { localWallpaperSelect } = this.elements;
+        if (!localWallpaperSelect) return;
+
+        while (localWallpaperSelect.options.length > 1) {
+            localWallpaperSelect.remove(1);
+        }
+
+        KNOWN_WALLPAPERS.forEach(filename => {
+            const option = document.createElement('option');
+            const filePath = `${WALLPAPERS_DIR}/${filename}`;
+            option.value = filePath;
+            option.textContent = filename
+                .split('.')[0]
+                .replace(/[-_]/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase());
+            localWallpaperSelect.appendChild(option);
+        });
+    }
+
     static applyBackground(value) {
         const { body, backgroundInput, localWallpaperSelect } = this.elements;
         const isClearing = !value || value.trim() === '';
 
         if (isClearing) {
-            // Clear background
-            body.style.backgroundImage = ''; // Revert to CSS default (gradient)
+            body.style.backgroundImage = '';
             StorageManager.removeItem(STORAGE_KEYS.BACKGROUND);
-             body.style.setProperty('--bg-image-set', '0'); // Hide overlay if used
+            body.style.setProperty('--bg-image-set', '0');
 
-            // Reset UI controls
             if (backgroundInput) backgroundInput.value = '';
-            if (localWallpaperSelect) localWallpaperSelect.value = ''; // Reset dropdown
+            if (localWallpaperSelect) localWallpaperSelect.value = '';
 
         } else if (value.startsWith(WALLPAPERS_DIR + '/')) {
-            // Apply local wallpaper
             try {
-                 // Check if chrome.runtime is available (it should be in an extension context)
-                 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
                     const fullUrl = chrome.runtime.getURL(value);
                     body.style.backgroundImage = `url('${fullUrl}')`;
-                    StorageManager.setItem(STORAGE_KEYS.BACKGROUND, value); // Store the relative path
-                    body.style.setProperty('--bg-image-set', '1'); // Show overlay
+                    StorageManager.setItem(STORAGE_KEYS.BACKGROUND, value);
+                    body.style.setProperty('--bg-image-set', '1');
 
-                    // Update UI
-                    if (backgroundInput) backgroundInput.value = ''; // Clear URL input
-                    if (localWallpaperSelect) localWallpaperSelect.value = value; // Set dropdown
-                 } else {
+                    if (backgroundInput) backgroundInput.value = '';
+                    if (localWallpaperSelect) localWallpaperSelect.value = value;
+                } else {
                     console.error("chrome.runtime.getURL is not available. Cannot load local wallpaper.");
                     alert("Error: Cannot access extension resources to load local wallpaper.");
-                    this.applyBackground(null); // Attempt to clear on error
-                 }
+                    this.applyBackground(null);
+                }
             } catch (error) {
                 console.error(`Error applying local wallpaper '${value}':`, error);
                 alert(`Failed to apply local wallpaper. Ensure it's listed in manifest.json's web_accessible_resources.`);
-                this.applyBackground(null); // Attempt to clear on error
+                this.applyBackground(null);
             }
 
         } else if (value.startsWith('http') || value.startsWith('data:')) {
-            // Apply online URL wallpaper
-             body.style.backgroundImage = `url('${value}')`;
-             StorageManager.setItem(STORAGE_KEYS.BACKGROUND, value); // Store the URL
-             body.style.setProperty('--bg-image-set', '1'); // Show overlay
-
-             // Update UI
-             if (backgroundInput) backgroundInput.value = value; // Set URL input
-             if (localWallpaperSelect) localWallpaperSelect.value = ''; // Reset dropdown
+            body.style.backgroundImage = `url('${value}')`;
+            StorageManager.setItem(STORAGE_KEYS.BACKGROUND, value);
+            body.style.setProperty('--bg-image-set', '1');
+            if (backgroundInput) backgroundInput.value = value;
+            if (localWallpaperSelect) localWallpaperSelect.value = '';
 
         } else {
-            // Invalid input
             alert("Invalid background input. Please provide a valid URL (starting with http/https or data:) or select a local wallpaper.");
-            // Optionally clear the invalid input field
-             if (backgroundInput && backgroundInput.value === value) {
-                 backgroundInput.value = '';
-             }
+            if (backgroundInput && backgroundInput.value === value) {
+                backgroundInput.value = '';
+            }
         }
     }
 
      // --- Modal Management ---
-     static currentModalContext = null; // Stores { mode, manager, index, bookmarkInfo }
+     static currentModalContext = null;
 
      static setupModal() {
-         const { linkModal, linkForm, linkModalCancel } = this.elements;
-         if (!linkModal || !linkForm || !linkModalCancel) {
-             console.error("Modal elements not found for setup.");
-             return;
-         }
+        const { linkModal, linkForm, linkModalCancel } = this.elements;
+        if (!linkModal || !linkForm || !linkModalCancel) {
+            console.error("Modal elements not found for setup.");
+            return;
+        }
 
-         // Single submit listener for the form
-         linkForm.addEventListener('submit', async (e) => {
-             e.preventDefault();
-             if (!this.currentModalContext) return;
+        linkForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!this.currentModalContext) return;
 
-             const { mode, manager, index, bookmarkInfo } = this.currentModalContext;
-             const url = this.elements.linkUrlInput.value.trim();
-             const name = this.elements.linkNameInput.value.trim();
+            const { mode, manager, index, bookmarkInfo } = this.currentModalContext;
+            const url = this.elements.linkUrlInput.value.trim();
+            const name = this.elements.linkNameInput.value.trim();
 
-             if (!url || !name) {
-                 alert("Both URL and Name are required.");
-                 return;
-             }
+            if (!url || !name) {
+                alert("Both URL and Name are required.");
+                return;
+            }
 
-             // Basic URL validation (add more sophisticated check if needed)
-              try {
-                  new URL(url.startsWith('http') ? url : `https://${url}`);
-              } catch (_) {
-                  alert("Please enter a valid URL.");
-                  return;
-              }
+            try {
+                new URL(url.startsWith('http') ? url : `https://${url}`);
+            } catch (_) {
+                alert("Please enter a valid URL.");
+                return;
+            }
 
-             this.hideModal(); // Hide modal optimistically
+            this.hideModal();
 
-             try {
-                 if (bookmarkInfo) { // Handling a bookmark
-                     if (mode === 'edit') {
-                         await BookmarksManager.updateBookmark(bookmarkInfo.id, url, name);
-                     } else { // mode === 'add'
-                         await BookmarksManager.createBookmark(url, name); // Assume root or specific parent logic needed
-                     }
-                     await BookmarksManager.renderBookmarks( // Re-render bookmarks
-                         DOM_SELECTORS.BOOKMARKS_CONTAINER,
-                         () => this.showModal('add', null, null, { isBookmark: true }), // Add callback
-                         (b) => this.showModal('edit', null, null, { isBookmark: true, id: b.id, url: b.url, title: b.title }), // Edit callback
-                         async (bId) => { // Delete callback
-                              if (confirm('Are you sure you want to delete this bookmark?')) {
-                                  await BookmarksManager.removeBookmark(bId);
-                                  await BookmarksManager.renderBookmarks(DOM_SELECTORS.BOOKMARKS_CONTAINER, /* pass callbacks again */); // Re-render after delete
-                              }
-                          }
-                     );
-                 } else if (manager) { // Handling a quick link (managed entity)
-                     if (mode === 'edit') {
-                         manager.updateEntity(index, { url, name }); // EntityManager should trigger re-render via saveEntities
-                     } else { // mode === 'add'
-                         manager.addEntity({ url, name }); // EntityManager should trigger re-render via saveEntities
-                     }
-                 }
-             } catch (error) {
-                 console.error(`${mode === 'edit' ? 'Update' : 'Add'} operation failed:`, error);
-                 alert(`Failed to ${mode} ${bookmarkInfo ? 'bookmark' : 'link'}. Please try again.`);
-                 // Optionally re-show modal if needed: this.showModal(mode, manager, index, bookmarkInfo);
-             } finally {
-                 this.currentModalContext = null; // Clear context after operation
-             }
+            try {
+                if (bookmarkInfo) {
+                    if (mode === 'edit') {
+                        await BookmarksManager.updateBookmark(bookmarkInfo.id, url, name);
+                    } else {
+                        await BookmarksManager.createBookmark(url, name);
+                    }
+                    await BookmarksManager.renderBookmarks(
+                        DOM_SELECTORS.BOOKMARKS_CONTAINER,
+                        () => this.showModal('add', null, null, { isBookmark: true }),
+                        (b) => this.showModal('edit', null, null, { isBookmark: true, id: b.id, url: b.url, title: b.title }),
+                        async (bId) => {
+                            if (confirm('Are you sure you want to delete this bookmark?')) {
+                                await BookmarksManager.removeBookmark(bId);
+                                await BookmarksManager.renderBookmarks(DOM_SELECTORS.BOOKMARKS_CONTAINER,
+                                    () => this.showModal('add', null, null, { isBookmark: true }),
+                                    (b) => this.showModal('edit', null, null, { isBookmark: true, id: b.id, url: b.url, title: b.title }),
+                                    async (bId) => {
+                                        if (confirm('Are you sure you want to delete this bookmark?')) {
+                                            await BookmarksManager.removeBookmark(bId);
+                                            await BookmarksManager.renderBookmarks(DOM_SELECTORS.BOOKMARKS_CONTAINER);
+                                        }
+                                    }
+                                );
+                            }
+                        }
+                    );
+                } else if (manager) {
+                    if (mode === 'edit') {
+                        manager.updateEntity(index, { url, name });
+                    } else {
+                        manager.addEntity({ url, name });
+                    }
+                }
+            } catch (error) {
+                console.error(`${mode === 'edit' ? 'Update' : 'Add'} operation failed:`, error);
+                alert(`Failed to ${mode} ${bookmarkInfo ? 'bookmark' : 'link'}. Please try again.`);
+            } finally {
+                this.currentModalContext = null;
+            }
          });
 
          linkModalCancel.addEventListener('click', () => this.hideModal());
 
-         // Close modal on escape key
          linkModal.addEventListener('keydown', (event) => {
-             if (event.key === 'Escape') {
-                 this.hideModal();
-             }
+            if (event.key === 'Escape') {
+                this.hideModal();
+            }
          });
 
-         // Close modal on backdrop click
          linkModal.addEventListener('click', (event) => {
-             if (event.target === linkModal) { // Check if the click was directly on the backdrop
-                 this.hideModal();
-             }
+            if (event.target === linkModal) {
+                this.hideModal();
+            }
          });
      }
 
@@ -1030,59 +975,57 @@ class UIManager {
       * @param {object|null} bookmarkInfo - Bookmark data { isBookmark: true, id?, url?, title? }.
       */
      static showModal(mode, manager = null, index = null, bookmarkInfo = null) {
-         const { linkModal, linkModalTitle, linkUrlInput, linkNameInput, linkForm } = this.elements;
-         if (!linkModal || !linkModalTitle || !linkUrlInput || !linkNameInput) {
-             console.error("Cannot show modal, essential elements missing.");
-             return;
-         }
+        const { linkModal, linkModalTitle, linkUrlInput, linkNameInput, linkForm } = this.elements;
+        if (!linkModal || !linkModalTitle || !linkUrlInput || !linkNameInput) {
+            console.error("Cannot show modal, essential elements missing.");
+            return;
+        }
 
-         this.currentModalContext = { mode, manager, index, bookmarkInfo };
+        this.currentModalContext = { mode, manager, index, bookmarkInfo };
 
-         linkForm.reset(); // Clear previous input values reliably
+        linkForm.reset();
 
-         const isBookmark = !!bookmarkInfo?.isBookmark;
-         const entityType = isBookmark ? 'Bookmark' : 'Link';
+        const isBookmark = !!bookmarkInfo?.isBookmark;
+        const entityType = isBookmark ? 'Bookmark' : 'Link';
 
-         if (mode === 'edit') {
-             linkModalTitle.textContent = `Edit ${entityType}`;
-             const entity = isBookmark ? bookmarkInfo : manager?.getEntities()[index];
-             if (entity) {
+        if (mode === 'edit') {
+            linkModalTitle.textContent = `Edit ${entityType}`;
+            const entity = isBookmark ? bookmarkInfo : manager?.getEntities()[index];
+            if (entity) {
                 linkUrlInput.value = entity.url || '';
-                linkNameInput.value = entity.title || entity.name || ''; // Handle both bookmark 'title' and link 'name'
-             } else {
-                 console.error("Could not find entity data for editing.");
-                 this.hideModal(); // Hide if data is missing
-                 return;
-             }
-         } else { // mode === 'add'
-             linkModalTitle.textContent = `Add New ${entityType}`;
-         }
+                linkNameInput.value = entity.title || entity.name || '';
+            } else {
+                console.error("Could not find entity data for editing.");
+                this.hideModal();
+                return;
+            }
+        } else {
+            linkModalTitle.textContent = `Add New ${entityType}`;
+        }
 
-         linkModal.classList.remove(CSS_CLASSES.HIDDEN);
-         linkUrlInput.focus(); // Focus the first input field
-     }
+        linkModal.classList.remove(CSS_CLASSES.HIDDEN);
+        linkUrlInput.focus();
+    }
 
      static hideModal() {
-         const { linkModal, linkForm } = this.elements;
-          if (linkModal) {
-             linkModal.classList.add(CSS_CLASSES.HIDDEN);
-          }
-         if (linkForm) {
-            linkForm.reset(); // Clear form on hide
-         }
-         this.currentModalContext = null; // Clear context when hiding
-     }
+        const { linkModal, linkForm } = this.elements;
+        if (linkModal) {
+            linkModal.classList.add(CSS_CLASSES.HIDDEN);
+        }
+        if (linkForm) {
+            linkForm.reset();
+        }
+        this.currentModalContext = null;
+    }
 
-
-    // --- Clock and Date ---
     static clockIntervalId = null;
 
     static setupClockAndDate() {
         const { clock, date } = this.elements;
-         if (!clock || !date) {
-             console.error('Clock or Date element not found.');
-             return;
-         }
+        if (!clock || !date) {
+            console.error('Clock or Date element not found.');
+            return;
+        }
 
         const formatTime = (d) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
         const formatDate = (d) => d.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -1093,15 +1036,13 @@ class UIManager {
             date.textContent = formatDate(now);
         };
 
-        updateDisplay(); // Initial display
-        // Clear previous interval if setup is called again
+        updateDisplay();
         if (this.clockIntervalId) clearInterval(this.clockIntervalId);
-        this.clockIntervalId = setInterval(updateDisplay, 1000); // Update every second
+        this.clockIntervalId = setInterval(updateDisplay, 1000);
     }
 }
 
 class BookmarksManager {
-    // Check for API availability
     static isAvailable() {
         return typeof chrome !== 'undefined' && chrome.bookmarks;
     }
@@ -1111,7 +1052,6 @@ class BookmarksManager {
             return Promise.reject(new Error('Chrome Bookmarks API is not available.'));
         }
         return new Promise((resolve, reject) => {
-            // Use chrome.runtime.lastError for better error handling in callbacks
             chrome.bookmarks[operation](...args, (result) => {
                 if (chrome.runtime.lastError) {
                     reject(new Error(chrome.runtime.lastError.message));
@@ -1122,19 +1062,22 @@ class BookmarksManager {
         });
     }
 
-    static createBookmark = (url, title, parentId = '1') => // Default to Bookmarks Bar
+    static createBookmark = (url, title, parentId = '1') =>
         this.performBookmarkAction('create', { parentId, title, url });
 
     static updateBookmark = (id, url, title) =>
-        this.performBookmarkAction('update', String(id), { url, title }); // Ensure ID is string
+        this.performBookmarkAction('update', String(id), { url, title });
 
     static removeBookmark = (id) =>
-        this.performBookmarkAction('remove', String(id)); // Ensure ID is string
+        this.performBookmarkAction('remove', String(id));
+
+    static getBookmarkTree = () =>
+        this.performBookmarkAction('getChildren', '1');
 
     static getBookmark = async (id) => {
         try {
             const results = await this.performBookmarkAction('get', String(id));
-            return results?.[0]; // 'get' returns an array
+            return results?.[0];
         } catch (error) {
             console.error(`Error getting bookmark ${id}:`, error);
             return null;
@@ -1142,12 +1085,12 @@ class BookmarksManager {
     }
 
     static async renderBookmarks(containerSelector, addCallback, editCallback, deleteCallback) {
-         if (!this.isAvailable()) {
-             console.warn('Bookmarks API not available, skipping render.');
-             const section = document.querySelector(DOM_SELECTORS.BOOKMARKS_SECTION);
-             if(section) section.classList.add(CSS_CLASSES.HIDDEN);
-             return;
-         }
+        if (!this.isAvailable()) {
+            console.warn('Bookmarks API not available, skipping render.');
+            const section = document.querySelector(DOM_SELECTORS.BOOKMARKS_SECTION);
+            if(section) section.classList.add(CSS_CLASSES.HIDDEN);
+            return;
+        }
 
         const container = document.querySelector(containerSelector);
         const section = document.querySelector(DOM_SELECTORS.BOOKMARKS_SECTION);
@@ -1156,9 +1099,8 @@ class BookmarksManager {
             return;
         }
 
-        container.innerHTML = ''; // Clear previous content
+        container.innerHTML = '';
 
-        // Add the "Add Bookmark" card
         const addBookmarkCard = document.createElement('div');
         addBookmarkCard.className = `${CSS_CLASSES.LINK_CARD} ${CSS_CLASSES.ADD_LINK_CARD}`;
         addBookmarkCard.id = DOM_SELECTORS.ADD_BOOKMARK_BTN.substring(1);
@@ -1167,7 +1109,7 @@ class BookmarksManager {
             <p>Add Bookmark</p>
         `;
         addBookmarkCard.addEventListener('click', addCallback);
-        AccessibilityManager.applyAccessibilityAttributes(addBookmarkCard); // Make it accessible
+        AccessibilityManager.applyAccessibilityAttributes(addBookmarkCard);
         container.appendChild(addBookmarkCard);
 
         try {
@@ -1177,18 +1119,16 @@ class BookmarksManager {
             const processNodes = (nodes) => {
                 nodes?.forEach(node => {
                     if (node.url && !node.url.startsWith('javascript:')) {
-                        // Create and append bookmark card
-                        const bookmarkCard = createLinkCard(node.url, node.title || node.url, node.id, true); // Use ID as index for bookmarks
+                        const bookmarkCard = createLinkCard(node.url, node.title || node.url, node.id, true);
                         container.appendChild(bookmarkCard);
                         bookmarkCount++;
 
-                        // Attach specific listeners for bookmark edit/delete
                         const editBtn = bookmarkCard.querySelector(`.${CSS_CLASSES.EDIT_BTN}`);
                         const deleteBtn = bookmarkCard.querySelector(`.${CSS_CLASSES.DELETE_BTN}`);
 
                         if (editBtn) {
-                            editBtn.onclick = (e) => { // Use onclick for simplicity here, or addEventListener if preferred
-                                e.stopPropagation(); // Prevent card click
+                            editBtn.onclick = (e) => {
+                                e.stopPropagation();
                                 editCallback({ id: node.id, url: node.url, title: node.title });
                             };
                         }
@@ -1200,23 +1140,19 @@ class BookmarksManager {
                         }
 
                     } else if (node.children) {
-                        processNodes(node.children); // Recurse into folders
+                        processNodes(node.children); 
                     }
                 });
             };
 
             processNodes(bookmarkTreeNodes);
-
-            // Show/hide the whole section based on whether bookmarks were found
             section.classList.toggle(CSS_CLASSES.HIDDEN, bookmarkCount === 0);
-
-            // Enhance accessibility and lazy load after rendering
-             AccessibilityManager.enhanceLinkAccessibility(containerSelector);
-             AccessibilityManager.lazyLoadFavicons(containerSelector);
+            AccessibilityManager.enhanceLinkAccessibility(containerSelector);
+            AccessibilityManager.lazyLoadFavicons(containerSelector);
 
         } catch (error) {
             console.error('Error loading or processing bookmarks:', error);
-            section.classList.add(CSS_CLASSES.HIDDEN); // Hide section on error
+            section.classList.add(CSS_CLASSES.HIDDEN); 
         }
     }
 }
@@ -1231,17 +1167,17 @@ class BookmarksManager {
  * @param {boolean} isBookmark Flag indicating if it's a bookmark.
  * @returns {HTMLDivElement} The created card element.
  */
+
 function createLinkCard(url, name, idOrIndex, isBookmark = false) {
     const linkCard = document.createElement('div');
     linkCard.className = `${CSS_CLASSES.LINK_CARD} ${isBookmark ? CSS_CLASSES.BOOKMARK_CARD : ''}`;
     const faviconUrl = getFaviconUrl(url);
-    const safeName = name || url; // Use URL if name is missing
+    const safeName = name || url; 
 
-    // Use data attributes consistently for easy access
     linkCard.setAttribute('data-url', url);
-    linkCard.setAttribute('data-title', safeName.toLowerCase()); // For filtering
+    linkCard.setAttribute('data-title', safeName.toLowerCase()); 
     linkCard.setAttribute(isBookmark ? 'data-id' : 'data-index', idOrIndex);
-    linkCard.setAttribute('draggable', !isBookmark); // Only quick links are draggable
+    linkCard.setAttribute('draggable', !isBookmark); 
 
     linkCard.innerHTML = `
         <div class="card-content">
@@ -1253,22 +1189,16 @@ function createLinkCard(url, name, idOrIndex, isBookmark = false) {
             <button class="${CSS_CLASSES.DELETE_BTN}" data-${isBookmark ? 'id' : 'index'}="${idOrIndex}" aria-label="${isBookmark ? ARIA_LABELS.DELETE_BOOKMARK : ARIA_LABELS.DELETE_LINK}">×</button>
         </div>
     `;
-    // Find the img specifically to potentially set data-src for lazy loading if not handled by observer directly
     const img = linkCard.querySelector('img.favicon');
-    if (img) img.dataset.src = faviconUrl; // Ensure lazy loader knows the target src
+    if (img) img.dataset.src = faviconUrl; 
 
-    // Main click action - use capturing phase maybe? Or just check target.
     linkCard.addEventListener('click', (e) => {
-        // Prevent card click if a button inside was clicked
         if (e.target.closest(`.${CSS_CLASSES.EDIT_BTN}, .${CSS_CLASSES.DELETE_BTN}`)) {
             return;
         }
-        // Navigate
         const targetUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
-        window.open(targetUrl, '_blank', 'noopener,noreferrer'); // Security best practice
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
     });
-
-    // Accessibility attributes are now primarily handled by AccessibilityManager.applyAccessibilityAttributes
 
     return linkCard;
 }
@@ -1278,32 +1208,27 @@ function createLinkCard(url, name, idOrIndex, isBookmark = false) {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("DOM Content Loaded - Initializing New Tab");
 
-    // Initialize UI Manager first (this now also handles loading the initial background)
     UIManager.init();
 
-    // Setup Quick Links Manager
     const quickLinksManager = new EntityManager(
         STORAGE_KEYS.QUICK_LINKS,
         DOM_SELECTORS.QUICK_LINKS_CONTAINER,
         DOM_SELECTORS.ADD_LINK_BTN,
         createLinkCard
     );
-    quickLinksManager.render(); // Initial render
+    quickLinksManager.render();
 
-    // Setup Import/Export Buttons
     ImportExportManager.setupImportExportButtons(
         DOM_SELECTORS.BACKGROUND_SETTINGS,
         quickLinksManager
     );
 
-    // Setup Drag and Drop for Quick Links
     DragDropManager.setupDragDrop(
         DOM_SELECTORS.QUICK_LINKS_CONTAINER,
         () => quickLinksManager.getEntities(),
         (updatedEntities) => quickLinksManager.saveEntities(updatedEntities)
     );
 
-    // Event Delegation for Quick Links Container
     const quickLinksContainer = document.querySelector(DOM_SELECTORS.QUICK_LINKS_CONTAINER);
     if (quickLinksContainer) {
         quickLinksContainer.addEventListener('click', (e) => {
@@ -1312,11 +1237,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const deleteBtn = target.closest(`.${CSS_CLASSES.DELETE_BTN}`);
             const addBtn = target.closest(DOM_SELECTORS.ADD_LINK_BTN);
 
-            if (editBtn && !editBtn.closest(`.${CSS_CLASSES.BOOKMARK_CARD}`)) { // Ensure it's not a bookmark edit button
+            if (editBtn) {
                  e.stopPropagation();
                 const index = parseInt(editBtn.getAttribute('data-index'), 10);
                 UIManager.showModal('edit', quickLinksManager, index);
-            } else if (deleteBtn && !deleteBtn.closest(`.${CSS_CLASSES.BOOKMARK_CARD}`)) { // Ensure it's not a bookmark delete button
+            } else if (deleteBtn) {
                  e.stopPropagation();
                  if (confirm('Are you sure you want to delete this quick link?')) {
                       const index = parseInt(deleteBtn.getAttribute('data-index'), 10);
@@ -1331,41 +1256,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error("Quick Links container not found for event delegation.");
     }
 
-    // Load and Render Bookmarks
-     if (BookmarksManager.isAvailable()) {
-         await BookmarksManager.renderBookmarks(
-             DOM_SELECTORS.BOOKMARKS_CONTAINER,
-             // Add Callback
-             () => UIManager.showModal('add', null, null, { isBookmark: true }),
-             // Edit Callback (handles both quick links and bookmarks via UIManager.showModal logic now)
-             async (bookmarkData) => {
+    if (BookmarksManager.isAvailable()) {
+        await BookmarksManager.renderBookmarks(
+            DOM_SELECTORS.BOOKMARKS_CONTAINER,
+            () => UIManager.showModal('add', null, null, { isBookmark: true }),
+            async (bookmarkData) => {
                 UIManager.showModal('edit', null, null, { ...bookmarkData, isBookmark: true });
-             },
-             // Delete Callback
-             async (bookmarkId) => {
-                  if (confirm('Are you sure you want to delete this bookmark?')) {
-                      try {
-                          await BookmarksManager.removeBookmark(bookmarkId);
-                          // Re-render bookmarks after delete
-                          await BookmarksManager.renderBookmarks(
-                              DOM_SELECTORS.BOOKMARKS_CONTAINER,
-                              () => UIManager.showModal('add', null, null, { isBookmark: true }),
-                              (bData) => UIManager.showModal('edit', null, null, { ...bData, isBookmark: true }),
-                              async (bId) => { /* Delete logic - called recursively, safe */ }
-                          );
-                      } catch (error) {
-                          console.error("Failed to delete bookmark:", error);
-                          alert("Failed to delete bookmark.");
-                      }
-                  }
-              }
-         );
-     } else {
-         const bookmarksSection = document.querySelector(DOM_SELECTORS.BOOKMARKS_SECTION);
-         if (bookmarksSection) bookmarksSection.classList.add(CSS_CLASSES.HIDDEN);
-     }
+            },
+            async (bookmarkId) => {
+                if (confirm('Are you sure you want to delete this bookmark?')) {
+                    try {
+                        await BookmarksManager.removeBookmark(bookmarkId);
+                        await BookmarksManager.renderBookmarks(
+                            DOM_SELECTORS.BOOKMARKS_CONTAINER,
+                            () => UIManager.showModal('add', null, null, { isBookmark: true }),
+                            (bData) => UIManager.showModal('edit', null, null, { ...bData, isBookmark: true }),
+                            async (bId) => { }
+                        );
+                    } catch (error) {
+                        console.error("Failed to delete bookmark:", error);
+                        alert("Failed to delete bookmark.");
+                    }
+                }
+            }
+        );
+    } else {
+        const bookmarksSection = document.querySelector(DOM_SELECTORS.BOOKMARKS_SECTION);
+        if (bookmarksSection) bookmarksSection.classList.add(CSS_CLASSES.HIDDEN);
+    }
 
-    // Setup Accessibility Features
     AccessibilityManager.setupKeyboardNavigation();
     AccessibilityManager.enhanceLinkAccessibility(DOM_SELECTORS.QUICK_LINKS_CONTAINER);
     AccessibilityManager.enhanceLinkAccessibility(DOM_SELECTORS.BOOKMARKS_CONTAINER);

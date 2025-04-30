@@ -1,4 +1,3 @@
-// manifest.json (relevant parts)
 {
   "manifest_version": 3,
   "name": "Frea Custom New Tab Page",
@@ -19,13 +18,11 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": [ "wallpapers/*", "icons/*" ], // Correct: Allows access to wallpapers
+      "resources": [ "wallpapers/*", "icons/*" ],
       "matches": [ "chrome-extension://*/*" ]
-      // Or stricter: "matches": [ "chrome-extension://YOUR_EXTENSION_ID/*" ]
     }
   ],
   "content_security_policy": {
-    // Correct: 'chrome-extension:' added to img-src
     "extension_pages": "script-src 'self'; object-src 'self'; img-src 'self' data: https://www.google.com/s2/favicons https://icons.duckduckgo.com chrome-extension:; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com;"
   }
 }
