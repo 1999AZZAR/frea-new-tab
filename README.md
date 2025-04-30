@@ -2,6 +2,24 @@
 
 A clean and highly customizable Chrome extension that replaces the default new tab page with quick links, bookmarks, search, and themes.
 
+![Frea Custom New Tab Page Screenshot](ss.png)
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Customization](#customization)
+- [File Structure](#file-structure)
+- [Development](#development)
+- [Contributing](#contributing)
+- [FAQs](#faqs)
+- [License](#license)
+
+---
+
 ## Features
 
 - **Quick Links**: Add and organize your favorite websites for one-click access.
@@ -9,6 +27,8 @@ A clean and highly customizable Chrome extension that replaces the default new t
 - **Search Bar**: Integrated search (Google by default) directly on the new tab.
 - **Themes & Wallpapers**: Choose from built-in wallpapers or add your own.
 - **Light & Dark Modes**: Automatic or manual toggle for theme styles.
+
+---
 
 ## Installation
 
@@ -18,11 +38,15 @@ A clean and highly customizable Chrome extension that replaces the default new t
 4. Click **Load unpacked** and select the project folder.
 5. A new tab will now use this extension.
 
+---
+
 ## Usage
 
 - Open a new tab to view your custom dashboard.
 - Click **+** under Quick Links to add a new link.
 - Use the gear icon to open settings for wallpapers and theme mode.
+
+---
 
 ## Customization
 
@@ -31,9 +55,11 @@ A clean and highly customizable Chrome extension that replaces the default new t
 - **Search Engine**: Change the search URL in `newtab.js` (default: Google).
 - **Styles**: Modify `styles.css` to adjust colors, fonts, and layout.
 
+---
+
 ## File Structure
 
-```
+```plaintext
 chrome-startup/
 ├── icons/              # Extension icons (PNG)
 ├── wallpapers/         # Default wallpapers
@@ -44,11 +70,15 @@ chrome-startup/
 ├── README.md           # This documentation
 ```
 
+---
+
 ## Development
 
 - Uses vanilla JavaScript and CSS—no build step required.
 - To test changes, reload the extension in `chrome://extensions`.
 - Use the browser console for debugging (`F12`).
+
+---
 
 ## Contributing
 
@@ -56,6 +86,21 @@ Contributions are welcome! Feel free to:
 
 - Submit issues or feature requests.
 - Open pull requests with improvements, bug fixes, or documentation updates.
+
+---
+
+## FAQs
+
+### 1. Can I use a custom search engine?
+Yes, update the search URL in `newtab.js`.
+
+### 2. How do I add my own wallpapers?
+Place the image files in the `wallpapers/` folder and update `newtab.js` if required.
+
+### 3. How do I reset the quick links?
+Open Chrome's developer tools, go to Application > Storage, and clear the `storage.sync` data.
+
+---
 
 ## License
 
