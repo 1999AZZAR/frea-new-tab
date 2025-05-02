@@ -68,6 +68,76 @@ const KNOWN_WALLPAPERS = [
 // --- Utilities ---
 
 /**
+ * Show a toast notification with the specified message and type
+ * @param {string} message - The message to display
+ * @param {string} type - The type of notification (success, error, info)
+ * @param {number} duration - Duration in milliseconds (default: 3000)
+ */
+function showToast(message, type = 'info', duration = 3000) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+
+    const container = document.body;
+    container.appendChild(toast);
+
+    // Position toast at bottom-right
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.right = '20px';
+    toast.style.backgroundColor = type === 'success' ? 'var(--success-color)' :
+                                 type === 'error' ? 'var(--danger-color)' :
+                                 'var(--info-color)';
+    toast.style.color = '#ffffff';
+    toast.style.padding = '12px 24px';
+    toast.style.borderRadius = 'var(--border-radius-small)';
+    toast.style.boxShadow = 'var(--shadow-medium)';
+    toast.style.zIndex = 'var(--z-overlay)';
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s ease';
+
+    // Show animation
+    setTimeout(() => {
+        toast.style.opacity = '1';
+    }, 100);
+
+    // Hide after duration
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, duration);
+}
+
+/**
+ * Show a success toast notification
+ * @param {string} message - The message to display
+ * @param {number} duration - Duration in milliseconds (default: 3000)
+ */
+function showSuccessToast(message, duration = 3000) {
+    showToast(message, 'success', duration);
+}
+
+/**
+ * Show an error toast notification
+ * @param {string} message - The message to display
+ * @param {number} duration - Duration in milliseconds (default: 3000)
+ */
+function showErrorToast(message, duration = 3000) {
+    showToast(message, 'error', duration);
+}
+
+/**
+ * Show an info toast notification
+ * @param {string} message - The message to display
+ * @param {number} duration - Duration in milliseconds (default: 3000)
+ */
+function showInfoToast(message, duration = 3000) {
+    showToast(message, 'info', duration);
+}
+
+/**
  * Safely gets an element by ID and logs an error if not found.
  * @param {string} id The element ID.
  * @param {string} contextName Optional context for error logging.
@@ -543,13 +613,14 @@ class EntityManager {
         this.render();
     }
 
-    addEntity(data) {
+    async addEntity(data) {
         const entities = this.getEntities();
         entities.push(data);
         this.saveEntities(entities);
+        showSuccessToast('Link added successfully!');
     }
 
-    updateEntity(index, data) {
+    async updateEntity(index, data) {
         const entities = this.getEntities();
         if (index >= 0 && index < entities.length) {
             entities[index] = { ...entities[index], ...data };
@@ -804,8 +875,8 @@ class UIManager {
             option.value = filePath;
             option.textContent = filename
                 .split('.')[0]
-                .replace(/-/g, ' ')
-                .replace(/\b\w/g, char => char.toUpperCase());
+                .replace(/[-_]/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase());
             localWallpaperSelect.appendChild(option);
         });
     }
@@ -884,6 +955,15 @@ class UIManager {
      static setupModal() {
         const { linkModal, linkForm, linkModalCancel } = this.elements;
         if (!linkModal || !linkForm || !linkModalCancel) {
+        }
+    }
+
+ // --- Modal Management ---
+ static currentModalContext = null;
+
+    static setupModal() {
+        const { linkModal, linkForm, linkModalCancel } = this.elements;
+        if (!linkModal || !linkForm || !linkModalCancel) {
             console.error("Modal elements not found for setup.");
             return;
         }
@@ -897,75 +977,57 @@ class UIManager {
             const name = this.elements.linkNameInput.value.trim();
 
             if (!url || !name) {
-                alert("Both URL and Name are required.");
+                showErrorToast('Please fill in both URL and name.');
                 return;
             }
-
-            try {
-                new URL(url.startsWith('http') ? url : `https://${url}`);
-            } catch (_) {
-                alert("Please enter a valid URL.");
-                return;
-            }
-
-            this.hideModal();
 
             try {
                 if (bookmarkInfo) {
                     if (mode === 'edit') {
                         await BookmarksManager.updateBookmark(bookmarkInfo.id, url, name);
+                        showSuccessToast('Bookmark updated successfully!');
                     } else {
                         await BookmarksManager.createBookmark(url, name);
+                        showSuccessToast('Bookmark created successfully!');
                     }
                     await BookmarksManager.renderBookmarks(
                         DOM_SELECTORS.BOOKMARKS_CONTAINER,
                         () => this.showModal('add', null, null, { isBookmark: true }),
-                        (b) => this.showModal('edit', null, null, { isBookmark: true, id: b.id, url: b.url, title: b.title }),
-                        async (bId) => {
-                            if (confirm('Are you sure you want to delete this bookmark?')) {
-                                await BookmarksManager.removeBookmark(bId);
-                                await BookmarksManager.renderBookmarks(DOM_SELECTORS.BOOKMARKS_CONTAINER,
-                                    () => this.showModal('add', null, null, { isBookmark: true }),
-                                    (b) => this.showModal('edit', null, null, { isBookmark: true, id: b.id, url: b.url, title: b.title }),
-                                    async (bId) => {
-                                        if (confirm('Are you sure you want to delete this bookmark?')) {
-                                            await BookmarksManager.removeBookmark(bId);
-                                            await BookmarksManager.renderBookmarks(DOM_SELECTORS.BOOKMARKS_CONTAINER);
-                                        }
-                                    }
-                                );
-                            }
-                        }
+                        (bData) => this.showModal('edit', null, null, { ...bData, isBookmark: true }),
+                        async (bId) => { }
                     );
-                } else if (manager) {
+                } else {
                     if (mode === 'edit') {
-                        manager.updateEntity(index, { url, name });
+                        await manager.updateEntity(index, { url, name });
+                        showSuccessToast('Link updated successfully!');
                     } else {
-                        manager.addEntity({ url, name });
+                        await manager.addEntity({ url, name });
+                        showSuccessToast('Link added successfully!');
                     }
                 }
+                this.hideModal();
             } catch (error) {
                 console.error(`${mode === 'edit' ? 'Update' : 'Add'} operation failed:`, error);
-                alert(`Failed to ${mode} ${bookmarkInfo ? 'bookmark' : 'link'}. Please try again.`);
+                showErrorToast(`Failed to ${mode} ${bookmarkInfo ? 'bookmark' : 'link'}. Please try again.`);
             } finally {
                 this.currentModalContext = null;
             }
-         });
+        });
 
-         linkModalCancel.addEventListener('click', () => this.hideModal());
+        linkModalCancel.addEventListener('click', () => this.hideModal());
 
-         linkModal.addEventListener('keydown', (event) => {
+        linkModal.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 this.hideModal();
             }
-         });
+        });
 
-         linkModal.addEventListener('click', (event) => {
+        linkModal.addEventListener('click', (event) => {
             if (event.target === linkModal) {
                 this.hideModal();
             }
-         });
-     }
+        });
+    }
 
      /**
       * Shows the entity modal.
@@ -1080,6 +1142,7 @@ class BookmarksManager {
             return results?.[0];
         } catch (error) {
             console.error(`Error getting bookmark ${id}:`, error);
+            showErrorToast(`Failed to get bookmark ${id}`);
             return null;
         }
     }
@@ -1089,6 +1152,7 @@ class BookmarksManager {
             console.warn('Bookmarks API not available, skipping render.');
             const section = document.querySelector(DOM_SELECTORS.BOOKMARKS_SECTION);
             if(section) section.classList.add(CSS_CLASSES.HIDDEN);
+            showInfoToast('Bookmarks API not available');
             return;
         }
 
@@ -1146,13 +1210,20 @@ class BookmarksManager {
             };
 
             processNodes(bookmarkTreeNodes);
-            section.classList.toggle(CSS_CLASSES.HIDDEN, bookmarkCount === 0);
+            if (bookmarkCount === 0) {
+                section.classList.add(CSS_CLASSES.HIDDEN);
+                showInfoToast('No bookmarks found');
+            } else {
+                section.classList.remove(CSS_CLASSES.HIDDEN);
+                showInfoToast(`Loaded ${bookmarkCount} bookmarks`);
+            }
             AccessibilityManager.enhanceLinkAccessibility(containerSelector);
             AccessibilityManager.lazyLoadFavicons(containerSelector);
 
         } catch (error) {
             console.error('Error loading or processing bookmarks:', error);
             section.classList.add(CSS_CLASSES.HIDDEN); 
+            showErrorToast('Failed to load bookmarks');
         }
     }
 }

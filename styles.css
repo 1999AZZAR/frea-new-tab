@@ -892,6 +892,48 @@ body.dark-theme::before { background-color: rgba(0, 0, 0, 0.25); }
    11. Utility Classes
    ========================================================================== */
 
+.hidden {
+    display: none !important;
+}
+
+.visually-hidden {
+    position: absolute !important;
+    height: 1px; width: 1px;
+    overflow: hidden;
+    clip: rect(1px, 1px, 1px, 1px);
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   12. Toast Notifications
+   ========================================================================== */
+
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: var(--info-color);
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: var(--border-radius-small);
+    box-shadow: var(--shadow-medium);
+    z-index: var(--z-overlay);
+    opacity: 0;
+    transition: opacity var(--transition-speed-normal) ease;
+}
+
+.toast.success {
+    background-color: var(--success-color);
+}
+
+.toast.error {
+    background-color: var(--danger-color);
+}
+
+.toast.info {
+    background-color: var(--info-color);
+}
+
 .hidden { 
     display: none !important; 
 }
