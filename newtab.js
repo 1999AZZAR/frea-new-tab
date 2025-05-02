@@ -19,6 +19,8 @@ const DOM_SELECTORS = {
     BACKGROUND_APPLY_BTN: '#background-apply',
     LOCAL_WALLPAPER_SELECT: '#local-wallpaper-select',
     CLEAR_BACKGROUND_BTN: '#clear-background-btn',
+    UPLOAD_BACKGROUND_BTN: '#upload-background-btn', // New
+    UPLOAD_BACKGROUND_INPUT: '#upload-background-input', // New
     SEARCH_FORM: '#search-form',
     GOOGLE_SEARCH_INPUT: '#google-search',
     BOOKMARK_SEARCH_INPUT: '#bookmark-search',
@@ -64,6 +66,11 @@ const KNOWN_WALLPAPERS = [
     '01.jpg',
     '02.jpg',
 ];
+
+// --- NEW: Upload Config ---
+const MAX_UPLOAD_SIZE_MB = 5;
+const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 // --- Utilities ---
 
@@ -678,6 +685,8 @@ class UIManager {
         backgroundApplyBtn: null,
         localWallpaperSelect: null,
         clearBackgroundBtn: null,
+        uploadBackgroundBtn: null, // New
+        uploadBackgroundInput: null, // New
         linkModal: null,
         linkModalTitle: null,
         linkForm: null,
@@ -698,6 +707,8 @@ class UIManager {
         this.elements.backgroundApplyBtn = getElementByIdSafe(DOM_SELECTORS.BACKGROUND_APPLY_BTN, 'UIManager init');
         this.elements.localWallpaperSelect = getElementByIdSafe(DOM_SELECTORS.LOCAL_WALLPAPER_SELECT, 'UIManager init');
         this.elements.clearBackgroundBtn = getElementByIdSafe(DOM_SELECTORS.CLEAR_BACKGROUND_BTN, 'UIManager init');
+        this.elements.uploadBackgroundBtn = getElementByIdSafe(DOM_SELECTORS.UPLOAD_BACKGROUND_BTN, 'UIManager init'); // New
+        this.elements.uploadBackgroundInput = getElementByIdSafe(DOM_SELECTORS.UPLOAD_BACKGROUND_INPUT, 'UIManager init'); // New
         this.elements.linkModal = getElementByIdSafe(DOM_SELECTORS.LINK_MODAL, 'UIManager init');
         this.elements.linkModalTitle = getElementByIdSafe(DOM_SELECTORS.LINK_MODAL_TITLE, 'UIManager init');
         this.elements.linkForm = getElementByIdSafe(DOM_SELECTORS.LINK_FORM, 'UIManager init');
@@ -827,8 +838,15 @@ class UIManager {
     }
 
     static setupBackgroundImageControls() {
-        const { backgroundInput, backgroundApplyBtn, localWallpaperSelect, clearBackgroundBtn } = this.elements;
-        if (!backgroundInput || !backgroundApplyBtn || !localWallpaperSelect || !clearBackgroundBtn) {
+        const {
+            backgroundInput,
+            backgroundApplyBtn,
+            localWallpaperSelect,
+            clearBackgroundBtn,
+            uploadBackgroundBtn, // New
+            uploadBackgroundInput // New
+        } = this.elements;
+        if (!backgroundInput || !backgroundApplyBtn || !localWallpaperSelect || !clearBackgroundBtn || !uploadBackgroundBtn || !uploadBackgroundInput) {
             console.error('One or more background control elements not found.');
             return;
         }
@@ -858,6 +876,44 @@ class UIManager {
 
         clearBackgroundBtn.addEventListener('click', () => {
             this.applyBackground(null);
+        });
+
+        // --- New Upload Logic ---
+        uploadBackgroundBtn.addEventListener('click', () => {
+            uploadBackgroundInput.click(); // Trigger the hidden file input
+        });
+
+        uploadBackgroundInput.addEventListener('change', (event) => {
+            const file = event.target.files?.[0];
+            if (!file) {
+                return; // No file selected
+            }
+
+            // Validation
+            if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+                showErrorToast(`Invalid file type. Please select a JPG, PNG, GIF, or WEBP image.`);
+                uploadBackgroundInput.value = ''; // Reset input
+                return;
+            }
+
+            if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+                showErrorToast(`File is too large. Maximum size is ${MAX_UPLOAD_SIZE_MB}MB.`);
+                uploadBackgroundInput.value = ''; // Reset input
+                return;
+            }
+
+            // Read file as Data URL
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.applyBackground(e.target.result); // Apply the Data URL
+                showSuccessToast('Local background uploaded successfully!');
+            };
+            reader.onerror = (e) => {
+                console.error("FileReader error:", e);
+                showErrorToast('Failed to read the selected file.');
+            };
+            reader.readAsDataURL(file);
+            uploadBackgroundInput.value = ''; // Reset input after processing starts
         });
     }
 
@@ -902,7 +958,7 @@ class UIManager {
     }
 
     static applyBackground(value) {
-        const { body, backgroundInput, localWallpaperSelect } = this.elements;
+        const { body, backgroundInput, localWallpaperSelect, uploadBackgroundInput } = this.elements;
         const isClearing = !value || value.trim() === '';
 
         if (isClearing) {
@@ -912,6 +968,7 @@ class UIManager {
 
             if (backgroundInput) backgroundInput.value = '';
             if (localWallpaperSelect) localWallpaperSelect.value = '';
+            if (uploadBackgroundInput) uploadBackgroundInput.value = ''; // Clear file input too
 
         } else if (value.startsWith(WALLPAPERS_DIR + '/')) {
             try {
@@ -923,6 +980,7 @@ class UIManager {
 
                     if (backgroundInput) backgroundInput.value = '';
                     if (localWallpaperSelect) localWallpaperSelect.value = value;
+                    if (uploadBackgroundInput) uploadBackgroundInput.value = '';
                 } else {
                     console.error("chrome.runtime.getURL is not available. Cannot load local wallpaper.");
                     alert("Error: Cannot access extension resources to load local wallpaper.");
@@ -939,6 +997,7 @@ class UIManager {
             StorageManager.setItem(STORAGE_KEYS.BACKGROUND, value);
             body.style.setProperty('--bg-image-set', '1');
             if (backgroundInput) backgroundInput.value = value;
+            if (uploadBackgroundInput) uploadBackgroundInput.value = '';
             if (localWallpaperSelect) localWallpaperSelect.value = '';
 
         } else {
@@ -946,6 +1005,7 @@ class UIManager {
             if (backgroundInput && backgroundInput.value === value) {
                 backgroundInput.value = '';
             }
+            if (uploadBackgroundInput) uploadBackgroundInput.value = '';
         }
     }
 
