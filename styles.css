@@ -4,35 +4,46 @@
 
 :root {
     /* Color Palette */
-    --primary-color: #4CAF50;
-    --accent-color: #3498db;
-    --danger-color: #f44336;
-    --warning-color: #ff9800;
-    --info-color: #2196F3;
+    --primary-color: #2563eb;
+    --accent-color: #3b82f6;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #3182ce;
+    --success-color: #22c55e;
 
     /* Light Theme Variables */
-    --bg-primary-light: #f4f7f9;
-    --bg-secondary-light: #ffffff;
-    --text-primary-light: #2c3e50; 
-    --text-secondary-light: #7f8c8d; 
-    --border-color-light: #e0e6ed; 
-    --shadow-color-light: rgba(44, 62, 80, 0.1); 
-    --gradient-start-light: rgba(106, 17, 203, 0.03);
-    --gradient-end-light: rgba(37, 117, 252, 0.04);
+    --bg-primary-light: #ffffff;
+    --bg-secondary-light: #f8fafc4e;
+    --text-primary-light: #111827; 
+    --text-secondary-light: #4b5563; 
+    --border-color-light: #e5e7eb; 
+    --shadow-color-light: rgba(0, 0, 0, 0.05); 
+    --gradient-start-light: linear-gradient(135deg,
+        rgba(255, 118, 117, 0.05),
+        rgba(255, 176, 108, 0.07),
+        rgba(147, 197, 114, 0.09),
+        rgba(102, 194, 215, 0.11),
+        rgba(155, 118, 219, 0.13)
+    );
     --hover-bg-light: rgba(44, 62, 80, 0.05);
     --accent-color-rgb-light: 52, 152, 219;
     --bg-secondary-rgb-light: 255, 255, 255;
 
 
     /* Dark Theme Variables */
-    --bg-primary-dark: #1a1d21; 
-    --bg-secondary-dark: #282c34; 
-    --text-primary-dark: #e6edf3; 
-    --text-secondary-dark: #95a0ac; 
-    --border-color-dark: #3c424d; 
-    --shadow-color-dark: rgba(0, 0, 0, 0.2); 
-    --gradient-start-dark: rgba(106, 17, 203, 0.08);
-    --gradient-end-dark: rgba(37, 117, 252, 0.08);
+    --bg-primary-dark: #111827; 
+    --bg-secondary-dark: #1f29374e; 
+    --text-primary-dark: #f3f4f6; 
+    --text-secondary-dark: #9ca3af; 
+    --border-color-dark: #374151; 
+    --shadow-color-dark: rgba(0, 0, 0, 0.3); 
+    --gradient-start-dark: linear-gradient(135deg,
+        rgba(255, 118, 117, 0.1),
+        rgba(255, 176, 108, 0.15),
+        rgba(147, 197, 114, 0.2),
+        rgba(102, 194, 215, 0.25),
+        rgba(155, 118, 219, 0.3)
+    );
     --hover-bg-dark: rgba(255, 255, 255, 0.08);
     --accent-color-dark: #4ecdc4; 
     --accent-color-rgb-dark: 78, 205, 196; 
@@ -54,8 +65,8 @@
     --bg-secondary-rgb: var(--bg-secondary-rgb-light);
 
     /* Layout & Sizing */
-    --container-max-width: 1200px;
-    --content-max-width: 1080px;
+    --container-max-width: 1440px;
+    --content-max-width: 1440px;
     --base-padding: 16px;
     --large-padding: 24px;
     --base-gap: 20px;
@@ -113,7 +124,7 @@ body {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
     line-height: 1.6;
     background-color: var(--bg-primary);
-    background-image: var(--bg-image, linear-gradient(135deg, var(--gradient-end), var(--gradient-start)));
+    background-image: var(--bg-image, var(--gradient-start));
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -185,9 +196,9 @@ body.dark-theme::before { background-color: rgba(0, 0, 0, 0.25); }
     gap: var(--base-padding);
     margin-bottom: calc(var(--large-padding) * 1.5);
     width: 100%;
-    max-width: 85vw;
+    max-width: var(--content-max-width);
     align-self: center;
-    background-color: rgba(var(--bg-secondary-rgb), 0.6);
+    background-color: var(--bg-secondary);
     backdrop-filter: blur(4px);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-large);
@@ -268,12 +279,33 @@ body.dark-theme::before { background-color: rgba(0, 0, 0, 0.25); }
     margin-bottom: var(--large-padding);
 }
 
+.content .quick-links-section, .content .bookmarks-section{
+    background-color: var(--bg-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: var(--base-padding);
+    margin-bottom: calc(var(--large-padding) * 1.5);
+    width: 100%;
+    max-width: var(--content-max-width);
+    align-self: center;
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-large);
+    padding: var(--base-padding);
+}
+
+.content .quick-links-section.hidden, .content .bookmarks-section.hidden{
+    display: none;
+}
+
+
 /* ==========================================================================
    7. Link Card Styles (Updated)
    ========================================================================== */
 
 .link-card {
     background-color: var(--bg-secondary);
+    backdrop-filter: blur(20px);
     border-radius: var(--border-radius-medium);
     padding: var(--base-padding);
     aspect-ratio: 1 / 1;
@@ -910,8 +942,9 @@ body.dark-theme::before { background-color: rgba(0, 0, 0, 0.25); }
 
 .toast {
     position: fixed;
-    bottom: 20px;
+    top: 20px;
     right: 20px;
+    max-height: fit-content;
     background-color: var(--info-color);
     color: #ffffff;
     padding: 12px 24px;

@@ -27,6 +27,8 @@ A clean and highly customizable Chrome extension that replaces the default new t
 - **Search Bar**: Integrated search (Google by default) directly on the new tab.
 - **Themes & Wallpapers**: Choose from built-in wallpapers or add your own.
 - **Light & Dark Modes**: Automatic or manual toggle for theme styles.
+- **Modern Color Scheme**: Professional color palette with improved readability.
+- **Gradient Background**: Dynamic color wheel gradient that transitions smoothly between multiple colors.
 
 ---
 
@@ -53,7 +55,9 @@ A clean and highly customizable Chrome extension that replaces the default new t
 - **Quick Links**: Stored in Chrome `storage.sync`. Open settings to edit or reorder.
 - **Wallpapers**: Add image files to `wallpapers/` and update `newtab.js` if needed.
 - **Search Engine**: Change the search URL in `newtab.js` (default: Google).
-- **Styles**: Modify `styles.css` to adjust colors, fonts, and layout.
+- **Color Scheme**: Customize the modern color palette in `styles.css`.
+- **Gradient Background**: Adjust the dynamic color wheel gradient in `styles.css`.
+- **Fonts & Layout**: Modify typography and layout settings in `styles.css`.
 
 ---
 
